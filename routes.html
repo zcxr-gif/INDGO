@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Routes - INDGO AIR Virtual</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Make all navbar text white for the dark map background */
+    .navbar .nav-link,
+    .navbar .logo-text {
+        color: white;
+    }
+
+    /* Make the hamburger menu icon white */
+    .hamburger-menu .bar {
+        background-color: white;
+    }
+
+    .navbar .nav-link:hover {
+        color: #d1d1d1; /* A light grey for hover effect */
+    }
+
+    .navbar .nav-link.active {
+        color: white; /* Ensures the active link stays white */
+        border-bottom-color: white; /* Optional: make the active underline white too */
+    }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="/images/indgo.png" type="image/x-icon">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet.geodesic"></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="nav-logo">
+                <img src="/images/indgo.png" alt="IndGo AIR Virtual Logo" class="logo-image">
+                <span class="logo-text">IndGo AIR VIRTUAL</span>
+            </a>
+            <ul class="nav-menu">
+    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+    <li class="nav-item"><a href="curriculum.html" class="nav-link">Ranks</a></li>
+    <li class="nav-item"><a href="fleet.html" class="nav-link">Fleet</a></li>
+    <li class="nav-item dropdown">
+        <a href="#" class="nav-link active">Network ▾</a>
+        <ul class="dropdown-menu">
+            <li><a href="hubs.html">Hubs</a></li>
+            <li><a href="routes.html">Routes</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown">
+        <a href="#" class="nav-link">About Us ▾</a>
+        <ul class="dropdown-menu">
+            <li><a href="staff.html">Staff</a></li>
+            <li><a href="community.html">Community</a></li>
+        </ul>
+    </li>
+    <li class="nav-item auth-link"><a href="login.html" class="nav-link nav-button nav-button-login">Login</a></li>
+    <li class="nav-item auth-link"><a href="apply.html" class="nav-link nav-button">Join Us</a></li>
+</ul>
+            <div class="hamburger-menu">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div id="map-container">
+            <div id="map-hint">Click an airport to see its routes</div>
+            
+            <div id="route-info-container" class="hidden">
+                </div>
+        </div>
+    </main>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="routes.js"></script> 
+    <script src="global.js" defer></script>
+    <script src="script.js" defer></script>
+</body>
+</html>

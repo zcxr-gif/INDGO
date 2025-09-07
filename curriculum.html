@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ascent - INDGO AIR Virtual Ranks</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="/images/indgo.png" type="image/x-icon">
+</head>
+<body>
+    <header>
+       <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+        <img src="/images/indgo.png" alt="IndGo AIR Virtual Logo" class="logo-image">
+        <span class="logo-text">IndGo AIR VIRTUAL</span>
+    </a>
+    <ul class="nav-menu">
+    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+    <li class="nav-item"><a href="curriculum.html" class="nav-link active">Ranks</a></li>
+    <li class="nav-item"><a href="fleet.html" class="nav-link">Fleet</a></li>
+    <li class="nav-item dropdown">
+        <a href="#" class="nav-link">Network ▾</a>
+        <ul class="dropdown-menu">
+            <li><a href="hubs.html">Hubs</a></li>
+            <li><a href="routes.html">Routes</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown">
+        <a href="#" class="nav-link">About Us ▾</a>
+        <ul class="dropdown-menu">
+            <li><a href="staff.html">Staff</a></li>
+            <li><a href="community.html">Community</a></li>
+        </ul>
+    </li>
+    <li class="nav-item auth-link"><a href="login.html" class="nav-link nav-button nav-button-login">Login</a></li>
+    <li class="nav-item auth-link"><a href="apply.html" class="nav-link nav-button">Join Us</a></li>
+</ul>
+    <div class="hamburger-menu">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </div>
+</nav>
+    </header>
+
+    <main>
+        <section class="page-header fade-in">
+            <h1>The Pilot's Ascent</h1>
+            <p>An interactive journey through the ranks at INDGO AIR Virtual. Scroll to begin your flight.</p>
+        </section>
+
+        <div class="main-container">
+            <section id="flight-path-section" class="content-section">
+                
+                <div id="storm-cloud" class="cloud"></div>
+                <div id="cloud-1" class="cloud"></div>
+                <div id="cloud-2" class="cloud"></div>
+                <div id="cloud-3" class="cloud"></div>
+                <div id="cloud-4" class="cloud"></div>
+                <div id="cloud-5" class="cloud"></div>
+
+
+                <img id="plane" src="images/plane.png" alt="Plane">
+
+                <svg id="flight-path-svg" width="100%" height="100%" viewBox="0 0 500 4200" preserveAspectRatio="xMidYMax meet">
+                    <path id="flightPath" fill="none" d="M 250 50 
+    C 50 250, 450 450, 250 650 
+    S 50 850, 250 1050 
+    S 450 1250, 250 1450
+    S 50 1650, 250 1850
+    S 450 2050, 250 2250
+    S 50 2450, 250 2650
+    S 450 2850, 250 3050
+    S 50 3250, 250 3450
+    S 450 3650, 250 3850
+    L 250 3930" />
+                </svg>
+
+                <div class="path-content-container">
+                    <div class="path-step" id="step-1">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/indgo_cadet_badge.png" alt="IndGo Cadet Badge"></div>
+                            <h2>IndGo Cadet</h2>
+                            <p><strong>Flight Hours:</strong> 0 hrs</p>
+                            <ul><li>Training routes only (Q400, A320)</li><li>Discord pilot badge</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-2">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/skyline_observer_badge.png" alt="Skyline Observer Badge"></div>
+                            <h2>Skyline Observer</h2>
+                            <p><strong>Flight Hours:</strong> 50 hrs</p>
+                            <ul><li>Access to A321/B738 short-haul</li><li>Eligible for beginner events</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-3">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/route_explorer_badge.png" alt="Route Explorer Badge"></div>
+                            <h2>Route Explorer</h2>
+                            <p><strong>Flight Hours:</strong> 100 hrs</p>
+                            <ul><li>Medium-haul aircraft (B38M/A330)</li><li>Written & Practical Test required</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-4">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/skyline_officer_badge.png" alt="Skyline Officer Badge"></div>
+                            <h2>Skyline Officer</h2>
+                            <p><strong>Flight Hours:</strong> 180 hrs</p>
+                            <ul><li>Long-haul unlocks (B787-8/B77L)</li><li>Written & Practical Test required</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-5">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/command_captain_badge.png" alt="Command Captain Badge"></div>
+                            <h2>Command Captain</h2>
+                            <p><strong>Flight Hours:</strong> 300 hrs</p>
+                            <ul><li>Senior group flight eligibility</li><li>Command aircraft: B77W, B789</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-6">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/elite_captain_badge.png" alt="Elite Captain Badge"></div>
+                            <h2>Elite Captain</h2>
+                            <p><strong>Flight Hours:</strong> 500 hrs</p>
+                            <ul><li>Ultra Long Haul access (A350)</li><li>Written & Practical Test required</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-7">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/blue_eagle_badge.png" alt="Blue Eagle Badge"></div>
+                            <h2>Blue Eagle</h2>
+                            <p><strong>Flight Hours:</strong> 750 hrs</p>
+                            <ul><li>A380/B744 heavy ops access</li><li>Exclusive Discord lounge</li><li>Written & Practical Test required</li></ul>
+                        </div>
+                    </div>
+                     <div class="path-step" id="step-8">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/line_instructor_badge.png" alt="Line Instructor Badge"></div>
+                            <h2>Line Instructor</h2>
+                            <p><strong>Flight Hours:</strong> 1000 hrs</p>
+                            <ul><li>Can test cadets and mid-rank pilots</li><li>Route reviewing rights</li></ul>
+                        </div>
+                    </div>
+                     <div class="path-step" id="step-9">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/chief_flight_instructor_badge.png" alt="Chief Flight Instructor Badge"></div>
+                            <h2>Chief Flight Instructor</h2>
+                            <p><strong>Flight Hours:</strong> 1400 hrs</p>
+                            <ul><li>Manage Line Instructors</li><li>Crew check and instructor oversight</li></ul>
+                        </div>
+                    </div>
+                     <div class="path-step" id="step-10">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/indgo_skymaster_badge.png" alt="IndGo SkyMaster Badge"></div>
+                            <h2>IndGo SkyMaster</h2>
+                            <p><strong>Flight Hours:</strong> 1800 hrs</p>
+                            <ul><li>Access to staff-level decisions</li><li>Route planning authority</li></ul>
+                        </div>
+                    </div>
+                     <div class="path-step" id="step-11">
+                        <div class="path-content fade-in">
+                            <div class="badge-header"><img src="images/badges/blue_legacy_commander_badge.png" alt="Blue Legacy Commander Badge"></div>
+                            <h2>Blue Legacy Commander</h2>
+                            <p><strong>Flight Hours:</strong> 2300+ hrs</p>
+                            <ul><li>Lifetime elite badge</li><li>Council-level privileges</li><li>Ultimate recognition</li></ul>
+                        </div>
+                    </div>
+                    <div class="path-step" id="step-12">
+                        <a href="apply.html" class="path-cta fade-in">
+                            <div class="plane-landing-pad"></div>
+                            <h3>Ready for Takeoff?</h3>
+                            <p>Want to climb our ranks and be the best pilot out there? Apply now!</p>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <a href="index.html" class="footer-logo">
+    <img src="/images/indgo.png" alt="IndGo AIR Virtual Logo" class="logo-image">
+    <span class="logo-text">IndGo AIR VIRTUAL</span>
+</a>
+            <ul class="footer-links">
+                <li><a href="#">YouTube</a></li>
+                <li><a href="#">Discord</a></li>
+                <li><a href="#">Instagram</a></li>
+            </ul>
+        </div>
+        <div class="footer-disclaimer">
+             <p>&copy; 2025 IndGo Air Virtual | Developed by ServerNoob</p>
+             <p>Disclaimer: IndGo Air Virtual is a non-commercial, fan-run virtual airline for flight simulation enthusiasts within the Infinite Flight community. We are not affiliated with, sponsored, or endorsed by InterGlobe Aviation Limited (IndiGo) or any real-world airline. All trademarks, service marks, trade names, and logos associated with IndiGo are the property of InterGlobe Aviation Limited. Their use here is for identification and entertainment purposes only and does not imply any official connection.</p>
+        </div>
+    </footer>
+
+    <a href="#" class="back-to-top">↑</a>
+    <script src="script.js" defer></script>
+    <script src="global.js" defer></script>
+</body>
+</html>
