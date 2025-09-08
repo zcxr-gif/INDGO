@@ -867,10 +867,12 @@ a {
     transition: opacity 0.8s ease-in-out;
     display: flex;
     align-items: flex-end; /* Aligns the overlay to the bottom */
+    pointer-events: none; 
 }
 
 .hub-slide.active {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .slide-overlay {
@@ -1720,10 +1722,26 @@ a {
     margin-bottom: 5px;
     font-size: 1.1rem;
 }
+/* Button to open hub on map*/
+
+.view-on-map-btn {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #001B94; /* Or your theme's accent color */
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.view-on-map-btn:hover {
+    background-color: #FF8C00; /* Or a different hover color */
+}
 
 
 /* --- Routes Page Info Panel --- */
-/* --- Routes Page Info Panel (NEW ACCORDION DESIGN) --- */
 #route-info-container {
     position: absolute;
     top: 85px;

@@ -37,4 +37,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the slider
     showSlide(currentSlide);
+
+    // --- FIX STARTS HERE ---
+    // The following code ensures each "View on Map" button links correctly.
+    const viewMapButtons = document.querySelectorAll('.view-on-map-btn');
+
+    viewMapButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            // 1. Stop the browser from following the link in the default, broken way.
+            event.preventDefault();
+
+            // 2. Get the correct URL from the specific button that was clicked.
+            const destinationURL = this.href;
+
+            // 3. Manually navigate the browser to that correct URL.
+            window.location.href = destinationURL;
+        });
+    });
+    // --- FIX ENDS HERE ---
 });

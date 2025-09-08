@@ -2,13 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. INITIALIZE THE MAP
     const bounds = L.latLngBounds( L.latLng(-85, -180), L.latLng(85, 180) );
 
-// Initialize the map with these solid boundaries
-const map = L.map('map-container', {
-    zoomControl: false,
-    minZoom: 3,
-    maxBounds: bounds,
-    maxBoundsViscosity: 1.0
-}).setView([22.5937, 78.9629], 5);
+    // Initialize the map with these solid boundaries
+    const map = L.map('map-container', {
+        zoomControl: false,
+        minZoom: 3,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0
+    }).setView([22.5937, 78.9629], 5);
 
     const infoPanel = document.getElementById('route-info-container');
     L.DomEvent.on(infoPanel, 'wheel touchstart touchmove', L.DomEvent.stopPropagation);
@@ -65,11 +65,17 @@ const map = L.map('map-container', {
             
             const infoContainer = document.getElementById('route-info-container');
             const routeLinesGroup = L.layerGroup().addTo(map);
+            let activeRouteLine = null; // Variable to hold the currently highlighted route
 
             // ---- UPDATED FUNCTION: Displays routes in the new accordion panel ----
             function showRoutesForAirport(icao) {
                 // Clear any previously drawn routes
                 routeLinesGroup.clearLayers();
+                // **NEW**: Clear the highlighted route line when a new airport is selected
+                if (activeRouteLine) {
+                    map.removeLayer(activeRouteLine);
+                    activeRouteLine = null;
+                }
 
                 // Find all routes connected to this airport
                 const relevantRoutes = routes.filter(
@@ -110,7 +116,7 @@ const map = L.map('map-container', {
                         <div class="routes-list-container">
                             <ul>
                                 ${relevantRoutes.map(route => `
-                                    <li class="route-item">
+                                    <li class="route-item" data-origin="${route.origin}" data-destination="${route.destination}">
                                     <div class="route-summary">
                                         <span class="route-airport-code">${route.origin}</span>
                                         ${planeIconSVG}
@@ -137,6 +143,11 @@ const map = L.map('map-container', {
                 document.getElementById('close-routes-btn').addEventListener('click', () => {
                     infoContainer.classList.add('hidden');
                     routeLinesGroup.clearLayers();
+                    // **NEW**: Also clear the highlighted route line when the panel is closed
+                    if (activeRouteLine) {
+                        map.removeLayer(activeRouteLine);
+                        activeRouteLine = null;
+                    }
                 });
                 
                 // ***NEW: Add a click event for the new toggle button***
@@ -144,12 +155,41 @@ const map = L.map('map-container', {
                     infoContainer.classList.toggle('collapsed');
                 });
 
-
-                // Add click events to each route summary to toggle the details
+                // **MODIFIED**: Add click events to each route summary to toggle the details
+                // and highlight the specific route on the map.
                 document.querySelectorAll('.route-summary').forEach(summary => {
                     summary.addEventListener('click', () => {
-                        // Toggles the 'active' class on the parent '.route-item'
-                        summary.closest('.route-item').classList.toggle('active');
+                        const parentItem = summary.closest('.route-item');
+                        const wasActive = parentItem.classList.contains('active');
+
+                        // Clear any existing active elements and lines first
+                        if (activeRouteLine) {
+                            map.removeLayer(activeRouteLine);
+                            activeRouteLine = null;
+                        }
+                        document.querySelectorAll('.route-item').forEach(item => item.classList.remove('active'));
+
+                        // If the clicked item was not already active, make it active and draw its route
+                        if (!wasActive) {
+                            parentItem.classList.add('active');
+                            
+                            const originICAO = parentItem.dataset.origin;
+                            const destinationICAO = parentItem.dataset.destination;
+                            const departureAirport = airports[originICAO];
+                            const arrivalAirport = airports[destinationICAO];
+
+                            if (departureAirport && arrivalAirport) {
+                                const depCoords = [departureAirport.lat, departureAirport.lon];
+                                const arrCoords = [arrivalAirport.lat, arrivalAirport.lon];
+
+                                // Create a new highlighted polyline
+                                activeRouteLine = L.polyline([depCoords, arrCoords], {
+                                    color: '#FF8C00', // A bright orange to stand out
+                                    weight: 4,
+                                    opacity: 1
+                                }).addTo(map);
+                            }
+                        }
                     });
                 });
             }
@@ -158,19 +198,38 @@ const map = L.map('map-container', {
             // Get all unique airports that have routes
             const uniqueAirports = new Set(routes.flatMap(r => [r.origin, r.destination]));
 
+            // Define the hub airports using their ICAO codes
+            const hubICAOs = new Set(['VIDP', 'VABB', 'VOBL', 'VECC', 'VOMM', 'VAPO', 'VAGO', 'VIJU']);
+
             // Draw only the airport markers on the map initially
             uniqueAirports.forEach(icao => {
                 const airportData = airports[icao];
                 if (airportData) {
-                    const marker = L.circleMarker([airportData.lat, airportData.lon], {
-                        radius: 5,
-                        color: '#001B94',
-                        fillColor: '#001B94',
-                        fillOpacity: 0.8
-                    }).addTo(map);
+                    let markerOptions;
+
+                    // Check if the current airport is a hub
+                    if (hubICAOs.has(icao)) {
+                        // Style for hubs: orange and slightly larger
+                        markerOptions = {
+                            radius: 6,
+                            color: '#FF8C00',      // Orange outline
+                            fillColor: '#FF8C00',   // Orange fill
+                            fillOpacity: 1
+                        };
+                    } else {
+                        // Style for regular airports: the original blue
+                        markerOptions = {
+                            radius: 5,
+                            color: '#001B94',
+                            fillColor: '#001B94',
+                            fillOpacity: 0.8
+                        };
+                    }
+
+                    const marker = L.circleMarker([airportData.lat, airportData.lon], markerOptions).addTo(map);
 
                     marker.bindPopup(`<div class="airport-popup-title">${icao}</div>${airportData.name}`);
-                    
+
                     // Add the click event to each marker
                     marker.on('click', () => {
                         document.getElementById('map-hint').classList.add('hidden');
@@ -178,6 +237,25 @@ const map = L.map('map-container', {
                     });
                 }
             });
+
+            // --- NEW: CHECK FOR HUB IN URL ---
+            // This code runs after the map and markers have been set up.
+            const urlParams = new URLSearchParams(window.location.search);
+            const hubICAOFromURL = urlParams.get('hub');
+
+            if (hubICAOFromURL && airports[hubICAOFromURL]) {
+                const hubData = airports[hubICAOFromURL];
+                
+                // Center the map on the specified hub with a closer zoom
+                map.setView([hubData.lat, hubData.lon], 7); 
+
+                // Automatically show the routes for this hub
+                showRoutesForAirport(hubICAOFromURL);
+
+                // Hide the initial "click an airport" hint
+                document.getElementById('map-hint').classList.add('hidden');
+            }
+            // --- END OF NEW CODE ---
 
         })
         .catch(error => {
