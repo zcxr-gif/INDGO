@@ -1,13 +1,13 @@
 {
-  "name": "indgo-backend",
+  "name": "indgo-virtual-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API for IndGo Virtual Airline",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Antony",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
