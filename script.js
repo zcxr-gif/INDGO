@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Mobile Hamburger Menu ---
     if (hamburger && navMenu) {
         hamburger.addEventListener('click', () => {
-            // When opening the hamburger, close any open dropdowns
+            // When opening the hamburger, close any open dropdowns for a clean state
             document.querySelectorAll('.nav-item.dropdown.open').forEach(dropdown => {
                 dropdown.classList.remove('open');
             });
@@ -26,39 +26,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- NEW: Consolidated Mobile Navigation Logic ---
-if (navMenu) {
-    navMenu.addEventListener('click', (e) => {
-        // Only run logic if the mobile menu is active
-        if (!navMenu.classList.contains('active')) {
-            return;
-        }
+    // --- REFINED: Mobile Navigation & Dropdown Logic ---
+    if (navMenu) {
+        navMenu.addEventListener('click', (e) => {
+            // Only run logic if the mobile menu is active
+            if (!navMenu.classList.contains('active')) {
+                return;
+            }
 
-        // Find the link that was clicked, whether it's a main link or a sub-menu link
-        const link = e.target.closest('a');
-        if (!link) {
-            return; // Exit if the click wasn't on or inside a link
-        }
+            const link = e.target.closest('a');
+            if (!link) {
+                return; // Exit if the click wasn't on or inside a link
+            }
 
-        const parentLi = link.parentElement;
+            const parentLi = link.parentElement;
 
-        // Check if the link is a top-level dropdown toggle (like "Network" or "About Us")
-        if (parentLi.classList.contains('dropdown') && parentLi.parentElement === navMenu) {
-            // This is a dropdown toggle link. Prevent it from navigating.
-            e.preventDefault(); 
+            // Check if the link is a top-level dropdown toggle
+            if (parentLi.classList.contains('dropdown') && parentLi.parentElement === navMenu) {
+                e.preventDefault(); // Prevent navigation for dropdown toggles
 
-            // Toggle the 'open' class to show or hide the submenu
-            parentLi.classList.toggle('open');
+                // **NEW:** Close other open dropdowns for an accordion effect
+                const currentlyOpen = parentLi.classList.contains('open');
+                navMenu.querySelectorAll('.nav-item.dropdown').forEach(item => {
+                    item.classList.remove('open');
+                });
 
-        } else {
-            // This is a regular link OR a sub-menu link. Close the main mobile menu.
-            // The browser will then handle the navigation to the link's href automatically.
-            hamburger?.classList.remove('active');
-            navMenu.classList.remove('active');
-            document.body.classList.remove('no-scroll');
-        }
-    });
-}
+                // If the clicked item wasn't already open, open it.
+                if (!currentlyOpen) {
+                    parentLi.classList.add('open');
+                }
+                // If it was already open, the logic above has now closed it.
+
+            } else {
+                // This is a regular link OR a sub-menu link. Close the main mobile menu.
+                hamburger?.classList.remove('active');
+                navMenu.classList.remove('active');
+                document.body.classList.remove('no-scroll');
+            }
+        });
+    }
+
 
     // --- Fade-in Animations on Scroll (IntersectionObserver) ---
     try {

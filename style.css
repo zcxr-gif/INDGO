@@ -933,31 +933,49 @@ a {
     position: relative;
 }
 
+.nav-item.dropdown > .nav-link::after {
+    content: '▾'; /* The arrow character */
+    display: inline-block;
+    margin-left: 0.5em; /* Adds a bit of space next to the text */
+    font-size: 0.8em;   /* Makes the arrow slightly smaller than the text */
+    transition: transform 0.3s ease;
+}
+
+.nav-item.dropdown.open > .nav-link::after {
+    transform: rotate(180deg);
+}
+
 .dropdown-menu {
     display: none;
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: var(--primary-glass);
+    /* UPDATED: More opaque background for visibility */
+    background-color: rgba(13, 16, 28, 0.9); 
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
-    border-radius: 5px;
+    border-radius: 8px;
     padding: 0.5rem 0;
     list-style: none;
-    min-width: 150px;
+    min-width: 160px;
     z-index: 1001;
+    /* ADDED: A subtle shadow to lift it off the page */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-menu li a {
-    color: var(--text-color);
-    padding: 0.5rem 1rem;
+    /* UPDATED: Changed text color to white for contrast */
+    color: #ffffff; 
+    padding: 0.75rem 1.25rem; /* Increased padding for better spacing */
     display: block;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 400; /* Regular font weight */
 }
 
 .dropdown-menu li a:hover {
     background-color: var(--accent-color);
-    color: var(--heading-color);
+    /* UPDATED: Ensure text stays white on hover */
+    color: #ffffff; 
 }
 
 .nav-item.dropdown:hover .dropdown-menu {
@@ -2004,34 +2022,109 @@ a {
         max-width: 80%;
     }
 
-    .nav-menu { 
-        position: fixed; 
-        left: -100%; 
-        top: 65px; 
-        width: 100%; 
-        height: calc(100vh - 65px); 
-        background: rgba(13, 16, 28, 0.95); 
-        backdrop-filter: blur(10px); 
-        flex-direction: column; 
-        justify-content: center; 
-        gap: 2rem; 
-        transition: left 0.3s ease;
+    /* === START: UPDATED MOBILE MENU STYLES === */
+    .nav-menu {
+        position: fixed;
+        left: 0;
+        top: 65px;
+        width: 100%;
+        height: calc(100vh - 65px);
+        background: rgba(13, 16, 28, 0.98); /* Slightly more opaque */
+        backdrop-filter: blur(12px);
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.5rem; /* Reduced gap for a tighter look */
+        padding: 2rem 0;
+        /* Hides the menu off-screen */
+        transform: translateX(-100%);
+        /* Defines the smooth animation */
+        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     }
-    .nav-menu.active { 
-        left: 0; 
+
+    .nav-menu.active {
+        /* Slides the menu into view */
+        transform: translateX(0);
     }
-    .nav-link { 
-        font-size: 1.5rem; 
+
+    .nav-link {
+        font-size: 1.5rem;
+        display: block;
+        padding: 0.75rem 2rem;
+        margin: 0 1rem;
+        color: #ffffff;
     }
+
+    .nav-link.active {
+    color: #ffffff;
+    border-bottom: 2px solid var(--accent-color); /* Keeps the underline */
+}
+
+.nav-link:hover {
+    color: #ffffff;
+}
+
+
+
+    /* Adds a dropdown arrow */
+    .nav-item.dropdown > .nav-link {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .nav-item.dropdown > .nav-link::after {
+        content: '▾';
+        font-size: 1.5rem;
+        line-height: 1;
+        transition: transform 0.3s ease;
+    }
+
+    /* Rotates the arrow when the menu is open */
+    .nav-item.dropdown.open > .nav-link::after {
+        transform: rotate(180deg);
+    }
+
+    /* Styles for the animated sub-menu */
+    .nav-menu .dropdown-menu {
+        position: static;
+        width: auto;
+        background: rgba(0, 0, 0, 0.3);
+        border: none;
+        box-shadow: none;
+        border-radius: 8px;
+        margin: 0.25rem 1.5rem 1rem 1.5rem;
+        padding: 0;
+        /* Hides the sub-menu for the animation */
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+    }
+
+    /* Expands the sub-menu smoothly */
+    .nav-item.dropdown.open > .dropdown-menu {
+        padding: 0.5rem 0;
+        opacity: 1;
+        max-height: 300px; /* Needs to be larger than the content */
+    }
+
+    .dropdown-menu li a {
+        padding: 0.6rem 2.5rem; /* Indented sub-item links */
+        font-size: 1.1rem;
+    }
+    
     .hamburger-menu { 
         display: block; 
     }
+    
     .hamburger-menu.active .bar:nth-child(2) { 
         opacity: 0; 
     }
+    
     .hamburger-menu.active .bar:nth-child(1) { 
         transform: translateY(8px) rotate(45deg); 
     }
+    
     .hamburger-menu.active .bar:nth-child(3) { 
         transform: translateY(-8px) rotate(-45deg); 
     }
@@ -2052,7 +2145,6 @@ a {
         font-size: 0.9rem;
     }
 
-    /* --- Responsive for new sections --- */
     .feature-section, .feature-section.reverse {
         flex-direction: column;
     }
@@ -2061,11 +2153,10 @@ a {
         min-height: 200px;
     }
     .steps-container {
-        grid-template-columns: 1fr; /* Stack steps on mobile */
+        grid-template-columns: 1fr;
         gap: 1.5rem;
     }
 
-    /* --- Responsive for flight path page --- */
     #flight-path-section { 
         min-height: unset; 
         display: block; 
@@ -2078,27 +2169,5 @@ a {
         width: 100%; 
         max-width: 100%; 
         margin-bottom: 2rem; 
-    }
-    /* --- Responsive Mobile Dropdown Styles (NEW) --- */
-    .nav-menu .dropdown-menu {
-        position: static;
-        display: none; /* Hidden by default */
-        width: 100%;
-        background: rgba(0, 0, 0, 0.2); /* Slight background to distinguish it */
-        border: none;
-        box-shadow: none;
-        padding: 0.5rem 0 0.5rem 1.5rem; /* Indent sub-items */
-        border-radius: 5px;
-        margin-top: 0.5rem;
-    }
-
-    /* This rule shows the dropdown when the parent has the 'open' class from our JS */
-    .nav-item.dropdown.open > .dropdown-menu {
-        display: block;
-    }
-
-    /* Optional: Rotate the arrow on the parent link when open */
-    .nav-item.dropdown.open > .nav-link {
-        color: white;
     }
 }
