@@ -1,6 +1,7 @@
 // dashboard.js (Corrected for AWS S3 URLs)
 
 document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE_URL = 'https://indgo-backend.onrender.com';
     // --- START: CROPPER VARIABLES AND ELEMENTS ---
     const cropperModal = document.getElementById('cropper-modal');
     const imageToCrop = document.getElementById('image-to-crop');
@@ -71,9 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Main Function to Fetch User Data ---
     async function fetchUserData() {
         try {
-            const response = await fetch('http://localhost:5000/api/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch(`${API_BASE_URL}/api/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
 
             if (!response.ok) throw new Error('Could not fetch user data.');
 
@@ -123,13 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NEW: Admin Panel Functions ---
     async function populateAdminTools() {
         try {
-            const usersResponse = await fetch('http://localhost:5000/api/users', {
+            const usersResponse = await fetch('${API_BASE_URL}/api/users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const users = await usersResponse.json();
             renderUserList(users);
 
-            const logsResponse = await fetch('http://localhost:5000/api/logs', {
+            const logsResponse = await fetch('${API_BASE_URL}/api/logs', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const logs = await logsResponse.json();
@@ -211,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Fetch and render events
-            const eventsRes = await fetch('http://localhost:5000/api/events');
+            const eventsRes = await fetch('${API_BASE_URL}/api/events');
             const events = await eventsRes.json();
             renderManagementList(events, manageEventsContainer, 'event');
 
             // Fetch and render highlights
-            const highlightsRes = await fetch('http://localhost:5000/api/highlights');
+            const highlightsRes = await fetch('${API_BASE_URL}/api/highlights');
             const highlights = await highlightsRes.json();
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
 
@@ -350,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/me', {
+            const response = await fetch('${API_BASE_URL}/api/me', {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -397,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/me/password', {
+            const response = await fetch('${API_BASE_URL}/api/me/password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -424,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const role = document.getElementById('new-member-role').value;
 
             try {
-                const response = await fetch('http://localhost:5000/api/users', {
+                const response = await fetch('${API_BASE_URL}/api/users', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -457,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
                     try {
-                        const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+                        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
                             method: 'DELETE',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
@@ -478,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userId = select.dataset.userid;
                 const newRole = select.value;
                 try {
-                    const response = await fetch(`http://localhost:5000/api/users/${userId}/role`, {
+                    const response = await fetch(`${API_BASE_URL}/api/users/${userId}/role`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -512,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (confirm(`Are you sure you want to delete the ${postType}: "${postTitle}"?`)) {
                 try {
-                    const response = await fetch(`http://localhost:5000/api/${postType}s/${postId}`, {
+                    const response = await fetch(`${API_BASE_URL}/api/${postType}s/${postId}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -555,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await fetch('http://localhost:5000/api/events', {
+                const response = await fetch(`${API_BASE_URL}/api/events`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -584,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('highlightImage', document.getElementById('highlight-image').files[0]);
 
             try {
-                const response = await fetch('http://localhost:5000/api/highlights', {
+                const response = await fetch(`${API_BASE_URL}/api/highlights`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData

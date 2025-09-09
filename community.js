@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Page element containers ---
     const eventsContainer = document.getElementById('events-container');
     const highlightsContainer = document.getElementById('highlights-container');
-    const API_BASE_URL = 'http://localhost:5000';
+    const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
     /**
      * NEW: Sets up the Intersection Observer for fade-in animations.

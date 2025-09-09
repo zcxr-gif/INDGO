@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchUserData(token) {
         try {
-            const response = await fetch('http://localhost:5000/api/me', {
+            const response = await fetch('https://indgo-backend.onrender.com/api/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

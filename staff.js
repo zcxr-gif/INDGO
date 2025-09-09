@@ -2,8 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const staffGrid = document.getElementById('staff-grid');
-    // Ensure this URL is correct for your environment
-    const API_BASE_URL = 'http://localhost:5000'; 
+    const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
     // NEW: Helper function to copy text to the clipboard and provide user feedback.
     function copyToClipboard(text, element) {
