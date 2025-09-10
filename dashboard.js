@@ -124,13 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NEW: Admin Panel Functions ---
     async function populateAdminTools() {
         try {
-            const usersResponse = await fetch('${API_BASE_URL}/api/users', {
+            const usersResponse = await fetch(`${API_BASE_URL}/api/users`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const users = await usersResponse.json();
             renderUserList(users);
 
-            const logsResponse = await fetch('${API_BASE_URL}/api/logs', {
+            const logsResponse = await fetch(`${API_BASE_URL}/api/logs`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const logs = await logsResponse.json();
@@ -212,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Fetch and render events
-            const eventsRes = await fetch('${API_BASE_URL}/api/events');
+            const eventsRes = await fetch(`${API_BASE_URL}/api/events`);
             const events = await eventsRes.json();
             renderManagementList(events, manageEventsContainer, 'event');
 
             // Fetch and render highlights
-            const highlightsRes = await fetch('${API_BASE_URL}/api/highlights');
+            const highlightsRes = await fetch(`${API_BASE_URL}/api/highlights`);
             const highlights = await highlightsRes.json();
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
 
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('${API_BASE_URL}/api/me/password', {
+            const response = await fetch(`${API_BASE_URL}/api/me/password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const role = document.getElementById('new-member-role').value;
 
             try {
-                const response = await fetch('${API_BASE_URL}/api/users', {
+                const response = await fetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
