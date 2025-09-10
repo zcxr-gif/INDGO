@@ -1,5 +1,3 @@
-// dashboard.js (Corrected for AWS S3 URLs)
-
 document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = 'https://indgo-backend.onrender.com';
     // --- START: CROPPER VARIABLES AND ELEMENTS ---
@@ -10,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pictureInput = document.getElementById('profile-picture');
     let cropper;
     let croppedImageBlob = null; // This will hold the cropped image file
+
     // Page Elements
     const welcomeMessage = document.getElementById('welcome-message');
     const profileForm = document.getElementById('profile-form');
@@ -25,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileCardRole = document.getElementById('profile-card-role');
     const profileCardBio = document.getElementById('profile-card-bio');
 
-    // Tab Elements
+    // Tab Elements container (we will attach listeners dynamically)
+    const tabsContainer = document.querySelector('.tabs'); // container for tab links; adjust selector to your markup
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageEventsContainer = document.getElementById('manage-events-container');
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
 
+    // NEW: Pilot Database container will be created if not present
+    let pilotTabLink = document.getElementById('pilot-tab-link');
+    let pilotTabContent = document.getElementById('tab-pilots');
     const token = localStorage.getItem('authToken');
     let currentUserId = null;
 
@@ -63,79 +66,115 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
-
     if (!token) {
         window.location.href = 'login.html';
         return;
     }
 
-    // --- Main Function to Fetch User Data ---
+    // --------------------------
+    // SAFE FETCH WRAPPER
+    // --------------------------
+    async function safeFetch(url, options = {}) {
+        // Ensure headers object exists
+        options.headers = options.headers || {};
+        // We'll not overwrite existing Authorization if present
+        if (!options.headers.Authorization && token) {
+            options.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const res = await fetch(url, options);
+        let data = null;
+        try {
+            data = await res.json();
+        } catch (err) {
+            // Non-JSON response (rare) - keep data null
+        }
+
+        if (!res.ok) {
+            const msg = (data && (data.message || data.error)) || `Server error: ${res.status} ${res.statusText}`;
+            const err = new Error(msg);
+            err.status = res.status;
+            err.body = data;
+            throw err;
+        }
+        return data;
+    }
+
+    // Small UI helper (existing in your codebase)
+    function showNotification(message, type = 'info') {
+        // Minimal implementation; replace with your actual notifier if present
+        // type: 'success' | 'error' | 'info'
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        // You can hook in a real UI toast here
+        const el = document.createElement('div');
+        el.className = `notif ${type}`;
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+    }
+
+    // --------------------------
+    // Fetch User Data & Setup UI
+    // --------------------------
     async function fetchUserData() {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/me`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-});
+            const user = await safeFetch(`${API_BASE_URL}/api/me`, {
+                method: 'GET'
+            });
 
-            if (!response.ok) throw new Error('Could not fetch user data.');
-
-            const user = await response.json();
             currentUserId = user._id;
-
-            welcomeMessage.textContent = `Welcome, ${user.name}!`;
-            document.getElementById('profile-name').value = user.name;
-            document.getElementById('profile-bio').value = user.bio || '';
-
-            document.getElementById('profile-discord').value = user.discord || '';
-            document.getElementById('profile-ifc').value = user.ifc || '';
-            document.getElementById('profile-youtube').value = user.youtube || '';
-            document.getElementById('profile-preferred').value = user.preferredContact || 'none';
+            welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
+            if (document.getElementById('profile-name')) document.getElementById('profile-name').value = user.name;
+            if (document.getElementById('profile-bio')) document.getElementById('profile-bio').value = user.bio || '';
+            if (document.getElementById('profile-discord')) document.getElementById('profile-discord').value = user.discord || '';
+            if (document.getElementById('profile-ifc')) document.getElementById('profile-ifc').value = user.ifc || '';
+            if (document.getElementById('profile-youtube')) document.getElementById('profile-youtube').value = user.youtube || '';
+            if (document.getElementById('profile-preferred')) document.getElementById('profile-preferred').value = user.preferredContact || 'none';
 
             profileCardName.textContent = user.name;
             profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
-            profileCardRole.textContent = user.role.toUpperCase();
-            
-            // ## CHANGE 1: Use the S3 URL directly ##
+            profileCardRole.textContent = user.role ? user.role.toUpperCase() : 'USER';
+
+            // Use S3 URL directly, or ui-avatars fallback
             profileCardPicture.src = user.imageUrl
-                ? user.imageUrl // No longer prepending http://localhost:5000
+                ? user.imageUrl
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
 
-            // Show admin tools only if user has the base 'admin' role
+            // Show admin tab only for admins
             if (user.role === 'admin') {
-                adminTabLink.style.display = 'inline-block';
+                if (adminTabLink) adminTabLink.style.display = 'inline-block';
                 populateAdminTools();
+                // ensure pilot tab exists for admins
+                ensurePilotTab();
+                populatePilotDatabase();
             }
 
+            // Community roles
             const authorizedRoles = ['Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'admin', 'Chief Marketing Officer (CMO)', 'Events Manager (EM)'];
             if (authorizedRoles.includes(user.role)) {
-                communityTabLink.style.display = 'inline-block';
+                if (communityTabLink) communityTabLink.style.display = 'inline-block';
                 populateCommunityManagement();
             }
 
-            document.querySelector('.fade-in').classList.add('visible');
+            document.querySelector('.fade-in')?.classList.add('visible');
 
         } catch (error) {
-
             console.error('Error fetching user data:', error);
             localStorage.removeItem('authToken');
             window.location.href = 'login.html';
         }
     }
 
-    // --- NEW: Admin Panel Functions ---
+    // --------------------------
+    // ADMIN: Populate Users & Logs
+    // --------------------------
     async function populateAdminTools() {
         try {
-            const usersResponse = await fetch(`${API_BASE_URL}/api/users`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const users = await usersResponse.json();
+            const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
             renderUserList(users);
 
-            const logsResponse = await fetch(`${API_BASE_URL}/api/logs`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const logs = await logsResponse.json();
+            const logs = await safeFetch(`${API_BASE_URL}/api/logs`, { method: 'GET' });
             renderLogList(logs);
-
         } catch (error) {
             console.error('Failed to populate admin tools:', error);
             if (userListContainer) userListContainer.innerHTML = '<p style="color: red;">Could not load users.</p>';
@@ -165,12 +204,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const controlsDisabled = isCurrentUser ? 'disabled' : '';
 
             return `
-                <div class="user-manage-card">
+                <div class="user-manage-card" data-userid="${user._id}">
                     <div class="user-info">
                         <strong>${user.name}</strong>
                         <small>${user.email}</small>
+                        <div><small>Rank: ${user.rank || '—'} • Hours: ${user.flightHours ?? 0}</small></div>
                     </div>
                     <div class="user-controls">
+                        <label style="display:block;font-size:0.8rem;margin-bottom:6px;">
+                            Callsign:
+                            <input type="text" class="callsign-input" data-userid="${user._id}" value="${user.callsign || ''}" ${isCurrentUser ? 'readonly' : ''} placeholder="e.g. INDGO-01" style="margin-left:6px"/>
+                            <button type="button" class="set-callsign-btn" data-userid="${user._id}" ${controlsDisabled}>Set</button>
+                        </label>
                         <select class="role-select" data-userid="${user._id}" ${controlsDisabled}>
                             ${createRoleOptions(user.role)}
                         </select>
@@ -189,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!logContainer) return;
         logContainer.innerHTML = '';
 
-        if (logs.length === 0) {
+        if (!logs || logs.length === 0) {
             logContainer.innerHTML = '<p>No administrative actions have been logged yet.</p>';
             return;
         }
@@ -197,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const logEntries = logs.map(log => `
             <div class="log-entry">
                 <p><strong>Action:</strong> ${log.action.replace('_', ' ')}</p>
-                <p><strong>Admin:</strong> ${log.adminUser.name} (${log.adminUser.email})</p>
+                <p><strong>Admin:</strong> ${log.adminUser?.name || 'Unknown'} (${log.adminUser?.email || '—'})</p>
                 <p><strong>Details:</strong> ${log.details}</p>
                 <small>${new Date(log.timestamp).toLocaleString()}</small>
             </div>
@@ -206,21 +251,17 @@ document.addEventListener('DOMContentLoaded', () => {
         logContainer.innerHTML = logEntries;
     }
 
-    // --- NEW: Community Content Management Functions ---
+    // --------------------------
+    // COMMUNITY: events & highlights
+    // --------------------------
     async function populateCommunityManagement() {
         if (!manageEventsContainer || !manageHighlightsContainer) return;
-
         try {
-            // Fetch and render events
-            const eventsRes = await fetch(`${API_BASE_URL}/api/events`);
-            const events = await eventsRes.json();
+            const events = await safeFetch(`${API_BASE_URL}/api/events`, { method: 'GET' });
             renderManagementList(events, manageEventsContainer, 'event');
 
-            // Fetch and render highlights
-            const highlightsRes = await fetch(`${API_BASE_URL}/api/highlights`);
-            const highlights = await highlightsRes.json();
+            const highlights = await safeFetch(`${API_BASE_URL}/api/highlights`, { method: 'GET' });
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
-
         } catch (error) {
             console.error('Failed to populate community management lists:', error);
             manageEventsContainer.innerHTML = '<p style="color:red;">Could not load events.</p>';
@@ -229,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderManagementList(items, container, type) {
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
             container.innerHTML = `<p>No ${type}s found.</p>`;
             return;
         }
@@ -251,33 +292,45 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = itemsHtml;
     }
 
-    // --- Tab Switching Logic ---
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(item => item.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById(tab.dataset.tab).classList.add('active');
+    // --------------------------
+    // TAB SWITCHING: ensure listeners (including dynamically created tabs)
+    // --------------------------
+    function attachTabListeners() {
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabLinks.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabLinks.forEach(item => item.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                tab.classList.add('active');
+                const target = document.getElementById(tab.dataset.tab);
+                if (target) target.classList.add('active');
+
+                // If pilot tab activated, refresh pilots
+                if (tab.dataset.tab === 'tab-pilots') {
+                    populatePilotDatabase();
+                }
+            });
         });
-    });
+    }
+    attachTabListeners();
 
-    // --- Event Listeners for Forms and Admin Actions ---
-
-    // --- START: NEW CROPPER LOGIC ---
-    pictureInput.addEventListener('change', (e) => {
+    // --------------------------
+    // CROPPER LOGIC (unchanged)
+    // --------------------------
+    pictureInput?.addEventListener('change', (e) => {
         const files = e.target.files;
         if (files && files.length > 0) {
             const reader = new FileReader();
             reader.onload = () => {
                 imageToCrop.src = reader.result;
-                cropperModal.style.display = 'flex';
+                if (cropperModal) cropperModal.style.display = 'flex';
 
-                if (cropper) {
-                    cropper.destroy();
-                }
+                if (cropper) cropper.destroy();
 
                 cropper = new Cropper(imageToCrop, {
-                    aspectRatio: 1 / 1, // For a perfect circle/square
+                    aspectRatio: 1 / 1,
                     viewMode: 1,
                     background: false,
                     responsive: true,
@@ -304,111 +357,87 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    cancelCropBtn.addEventListener('click', () => {
-        cropperModal.style.display = 'none';
-        if (cropper) {
-            cropper.destroy();
-        }
-        pictureInput.value = ''; // Reset the file input
+    cancelCropBtn?.addEventListener('click', () => {
+        if (cropperModal) cropperModal.style.display = 'none';
+        if (cropper) cropper.destroy();
+        if (pictureInput) pictureInput.value = ''; // Reset the file input
     });
 
-    cropAndSaveBtn.addEventListener('click', () => {
+    cropAndSaveBtn?.addEventListener('click', () => {
         if (cropper) {
-            // Get the cropped image as a Blob
-            cropper.getCroppedCanvas({
-                width: 250, // Define the output size
-                height: 250
-            }).toBlob((blob) => {
-                croppedImageBlob = blob; // Store the blob
-
-                // Optional: Show a preview of the cropped image
+            cropper.getCroppedCanvas({ width: 250, height: 250 }).toBlob((blob) => {
+                croppedImageBlob = blob;
                 const previewUrl = URL.createObjectURL(blob);
-                profileCardPicture.src = previewUrl; // Update the side card immediately
-
-                cropperModal.style.display = 'none';
+                if (profileCardPicture) profileCardPicture.src = previewUrl;
+                if (cropperModal) cropperModal.style.display = 'none';
                 cropper.destroy();
-                pictureInput.value = ''; // Reset file input
+                if (pictureInput) pictureInput.value = '';
                 showNotification('Picture ready to be saved.', 'info');
             }, 'image/jpeg');
         }
     });
 
-    // Profile Update Form
-    profileForm.addEventListener('submit', async (e) => {
+    // --------------------------
+    // PROFILE UPDATE
+    // --------------------------
+    profileForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData();
         formData.append('name', document.getElementById('profile-name').value);
-        formData.append('bio', document.getElementById('profile-bio').value);
-
-        formData.append('discord', document.getElementById('profile-discord').value);
-        formData.append('ifc', document.getElementById('profile-ifc').value);
-        formData.append('youtube', document.getElementById('profile-youtube').value);
-        formData.append('preferredContact', document.getElementById('profile-preferred').value);
+        formData.append('bio', document.getElementById('profile-bio').value || '');
+        formData.append('discord', document.getElementById('profile-discord').value || '');
+        formData.append('ifc', document.getElementById('profile-ifc').value || '');
+        formData.append('youtube', document.getElementById('profile-youtube').value || '');
+        formData.append('preferredContact', document.getElementById('profile-preferred').value || 'none');
 
         if (croppedImageBlob) {
             formData.append('profilePicture', croppedImageBlob, 'profile.jpg');
         }
 
         try {
-            const response = await fetch('${API_BASE_URL}/api/me', {
+            const result = await safeFetch(`${API_BASE_URL}/api/me`, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` },
+                // don't set Content-Type for FormData
                 body: formData
             });
 
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'An unknown error occurred.');
-            }
-
             showNotification('Profile updated successfully!', 'success');
 
-            if (result.token) {
-                localStorage.setItem('authToken', result.token);
-            }
+            if (result.token) localStorage.setItem('authToken', result.token);
 
-            // Manually update the UI with the fresh user data from the response
+            // Update UI with returned user
             const user = result.user;
             welcomeMessage.textContent = `Welcome, ${user.name}!`;
             profileCardName.textContent = user.name;
             profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
             if (user.imageUrl) {
-                // ## CHANGE 2: Use the S3 URL directly and add cache-busting ##
                 profileCardPicture.src = `${user.imageUrl}?${new Date().getTime()}`;
             }
 
-            croppedImageBlob = null; // Reset the blob after successful upload
-
+            croppedImageBlob = null;
         } catch (error) {
             showNotification(`Update failed: ${error.message}`, 'error');
         }
     });
 
-    // Password Change Form
-    passwordForm.addEventListener('submit', async (e) => {
+    // --------------------------
+    // PASSWORD UPDATE
+    // --------------------------
+    passwordForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newPassword = document.getElementById('new-password').value;
         const confirmPassword = document.getElementById('confirm-password').value;
-
         if (newPassword !== confirmPassword) {
             showNotification('Passwords do not match.', 'error');
             return;
         }
-
         try {
-            const response = await fetch(`${API_BASE_URL}/api/me/password`, {
+            await safeFetch(`${API_BASE_URL}/api/me/password`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ newPassword })
             });
-
-            if (!response.ok) throw new Error(await response.json().then(d => d.message));
-
             showNotification('Password updated successfully!', 'success');
             passwordForm.reset();
         } catch (error) {
@@ -416,27 +445,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add New Member Form (Admin)
+    // --------------------------
+    // ADD MEMBER (ADMIN) - ensure callsign input exists
+    // --------------------------
     if (addMemberForm) {
+        // If the form doesn't already have a callsign input, add one
+        if (!document.getElementById('new-member-callsign')) {
+            const roleEl = document.getElementById('new-member-role');
+            const callsignWrapper = document.createElement('div');
+            callsignWrapper.innerHTML = `
+                <label for="new-member-callsign">Callsign (optional)</label>
+                <input id="new-member-callsign" name="callsign" placeholder="e.g. INDGO-01" />
+            `;
+            // insert callsign input before the submit button or after role if present
+            if (roleEl && roleEl.parentNode) {
+                roleEl.parentNode.insertBefore(callsignWrapper, roleEl.nextSibling);
+            } else {
+                addMemberForm.appendChild(callsignWrapper);
+            }
+        }
+
         addMemberForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('new-member-email').value;
             const password = document.getElementById('new-member-password').value;
             const role = document.getElementById('new-member-role').value;
+            const callsignInput = document.getElementById('new-member-callsign');
+            let callsign = callsignInput ? callsignInput.value.trim().toUpperCase() : null;
+            if (callsign === '') callsign = null;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users`, {
+                const newUser = await safeFetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ email, password, role })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role, callsign })
                 });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-
                 showNotification('User created successfully!', 'success');
                 addMemberForm.reset();
                 populateAdminTools();
@@ -446,51 +489,75 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event Delegation for User Role/Delete actions
+    // --------------------------
+    // EVENT DELEGATION: Admin user actions (delete, role change, set callsign)
+    // --------------------------
     if (userListContainer) {
         userListContainer.addEventListener('click', async (e) => {
             const target = e.target;
-            if (target.classList.contains('delete-user-btn') || target.closest('.delete-user-btn')) {
+            // Delete user
+            const deleteBtn = target.closest('.delete-user-btn');
+            if (deleteBtn) {
                 e.preventDefault();
-                const button = target.closest('.delete-user-btn');
-                const userId = button.dataset.userid;
-                const userName = button.dataset.username;
-
-                if (confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const result = await response.json();
-                        if (!response.ok) throw new Error(result.message);
-                        showNotification('User deleted successfully.', 'success');
-                        populateAdminTools();
-                    } catch (error) {
-                        showNotification(`Failed to delete user: ${error.message}`, 'error');
-                    }
+                const userId = deleteBtn.dataset.userid;
+                const userName = deleteBtn.dataset.username;
+                if (!userId) return;
+                if (!confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) return;
+                try {
+                    await safeFetch(`${API_BASE_URL}/api/users/${userId}`, {
+                        method: 'DELETE'
+                    });
+                    showNotification('User deleted successfully.', 'success');
+                    populateAdminTools();
+                } catch (error) {
+                    showNotification(`Failed to delete user: ${error.message}`, 'error');
                 }
+                return;
+            }
+
+            // Set callsign button
+            const setCsBtn = target.closest('.set-callsign-btn');
+            if (setCsBtn) {
+                e.preventDefault();
+                const userId = setCsBtn.dataset.userid;
+                const input = document.querySelector(`.callsign-input[data-userid="${userId}"]`);
+                if (!input) return;
+                let callsign = input.value.trim().toUpperCase();
+                if (!callsign) {
+                    showNotification('Please enter a non-empty callsign to set.', 'error');
+                    return;
+                }
+                try {
+                    await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ callsign })
+                    });
+                    showNotification(`Callsign ${callsign} assigned.`, 'success');
+                    populateAdminTools();
+                    populatePilotDatabase(); // keep pilot DB in sync
+                } catch (error) {
+                    showNotification(`Failed to set callsign: ${error.message}`, 'error');
+                }
+                return;
             }
         });
 
+        // Role changes (select element change)
         userListContainer.addEventListener('change', async (e) => {
             if (e.target.classList.contains('role-select')) {
                 const select = e.target;
                 const userId = select.dataset.userid;
                 const newRole = select.value;
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/users/${userId}/role`, {
+                    await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ newRole })
                     });
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.message);
                     showNotification('User role updated successfully.', 'success');
                     populateAdminTools();
+                    populatePilotDatabase();
                 } catch (error) {
                     showNotification(`Failed to update role: ${error.message}`, 'error');
                     populateAdminTools();
@@ -499,7 +566,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // NEW: Event Delegation for Community Post Deletion
+    // --------------------------
+    // COMMUNITY: deletion (events/highlights)
+    // --------------------------
     const communityTabContent = document.getElementById('tab-community');
     if (communityTabContent) {
         communityTabContent.addEventListener('click', async (e) => {
@@ -511,60 +580,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const postType = button.dataset.type; // 'event' or 'highlight'
             const postTitle = button.dataset.title;
 
-            if (confirm(`Are you sure you want to delete the ${postType}: "${postTitle}"?`)) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/${postType}s/${postId}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+            if (!confirm(`Are you sure you want to delete the ${postType}: "${postTitle}"?`)) return;
 
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.message);
-
-                    const successMessage = `${postType.charAt(0).toUpperCase() + postType.slice(1)} deleted successfully.`;
-                    showNotification(successMessage, 'success');
-                    populateCommunityManagement(); // Refresh the list
-                } catch (error) {
-                    showNotification(`Failed to delete ${postType}: ${error.message}`, 'error');
-                }
+            try {
+                await safeFetch(`${API_BASE_URL}/api/${postType}s/${postId}`, {
+                    method: 'DELETE'
+                });
+                const successMessage = `${postType.charAt(0).toUpperCase() + postType.slice(1)} deleted successfully.`;
+                showNotification(successMessage, 'success');
+                populateCommunityManagement(); // Refresh the list
+            } catch (error) {
+                showNotification(`Failed to delete ${postType}: ${error.message}`, 'error');
             }
         });
     }
 
-    // Logout Button
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        window.location.href = 'index.html';
-    });
-
-    // Community Content Forms
+    // --------------------------
+    // Community Content Forms (create)
+    // --------------------------
     const createEventForm = document.getElementById('create-event-form');
     const createHighlightForm = document.getElementById('create-highlight-form');
 
     if (createEventForm) {
         createEventForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const formData = new FormData();
             formData.append('title', document.getElementById('event-title').value);
             formData.append('date', document.getElementById('event-date').value);
             formData.append('description', document.getElementById('event-description').value);
-
             const eventImageInput = document.getElementById('event-image');
-            if (eventImageInput.files[0]) {
-                formData.append('eventImage', eventImageInput.files[0]);
-            }
+            if (eventImageInput?.files[0]) formData.append('eventImage', eventImageInput.files[0]);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/events`, {
+                await safeFetch(`${API_BASE_URL}/api/events`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-
                 showNotification('Event posted successfully!', 'success');
                 createEventForm.reset();
                 populateCommunityManagement();
@@ -577,23 +628,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (createHighlightForm) {
         createHighlightForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const formData = new FormData();
             formData.append('title', document.getElementById('highlight-title').value);
             formData.append('winnerName', document.getElementById('highlight-winner').value);
             formData.append('description', document.getElementById('highlight-description').value);
-            formData.append('highlightImage', document.getElementById('highlight-image').files[0]);
+            const hi = document.getElementById('highlight-image')?.files[0];
+            if (hi) formData.append('highlightImage', hi);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/highlights`, {
+                await safeFetch(`${API_BASE_URL}/api/highlights`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-
                 showNotification('Highlight posted successfully!', 'success');
                 createHighlightForm.reset();
                 populateCommunityManagement();
@@ -603,10 +649,112 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Initial data fetch ---
+    // --------------------------
+    // LOGOUT
+    // --------------------------
+    logoutBtn?.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        window.location.href = 'index.html';
+    });
+
+    // --------------------------
+    // PILOT DATABASE TAB & UI
+    // --------------------------
+    function ensurePilotTab() {
+        // If tab elements exist already, keep them. Otherwise create them.
+        if (!pilotTabLink) {
+            // create a tab link (adjust container placement as needed)
+            pilotTabLink = document.createElement('button');
+            pilotTabLink.id = 'pilot-tab-link';
+            pilotTabLink.className = 'tab-link';
+            pilotTabLink.dataset.tab = 'tab-pilots';
+            pilotTabLink.textContent = 'Pilot Database';
+            if (tabsContainer) tabsContainer.appendChild(pilotTabLink); // ensure there's a container in markup
+        }
+
+        if (!pilotTabContent) {
+            pilotTabContent = document.createElement('div');
+            pilotTabContent.id = 'tab-pilots';
+            pilotTabContent.className = 'tab-content';
+            pilotTabContent.innerHTML = `<div id="pilot-db-container"><p>Loading pilots...</p></div>`;
+            // add to main content area (you may need to adjust insertion point)
+            const contentWrapper = document.querySelector('.tab-contents') || document.body;
+            contentWrapper.appendChild(pilotTabContent);
+        }
+        attachTabListeners();
+    }
+
+    async function populatePilotDatabase() {
+        try {
+            const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
+            // Filter for pilots OR anyone with callsign
+            const pilots = (users || []).filter(u => u.role === 'pilot' || Boolean(u.callsign));
+
+            const container = document.getElementById('pilot-db-container');
+            if (!container) return;
+
+            if (pilots.length === 0) {
+                container.innerHTML = '<p>No pilots found.</p>';
+                return;
+            }
+
+            const rows = pilots.map(p => `
+                <div class="pilot-row" data-userid="${p._id}">
+                    <div class="pilot-info">
+                        <strong>${p.name}</strong> <small>(${p.email})</small><br/>
+                        <small>Rank: ${p.rank || '—'} • Hours: ${p.flightHours ?? 0}</small>
+                    </div>
+                    <div class="pilot-controls">
+                        <label>Callsign:
+                            <input class="pilot-callsign-input" data-userid="${p._id}" value="${p.callsign || ''}" placeholder="e.g. INDGO-01" />
+                        </label>
+                        <button class="pilot-set-callsign-btn" data-userid="${p._id}">Update Callsign</button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = rows;
+        } catch (error) {
+            console.error('Failed to load pilot database:', error);
+            const container = document.getElementById('pilot-db-container');
+            if (container) container.innerHTML = `<p style="color:red;">Could not load pilots: ${error.message}</p>`;
+        }
+    }
+
+    // Delegate clicks in pilot DB (callsign update)
+    document.body.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.pilot-set-callsign-btn');
+        if (!btn) return;
+        const userId = btn.dataset.userid;
+        const input = document.querySelector(`.pilot-callsign-input[data-userid="${userId}"]`);
+        if (!input) return;
+        const callsign = input.value.trim().toUpperCase();
+        if (!callsign) {
+            showNotification('Please enter a callsign before updating.', 'error');
+            return;
+        }
+        try {
+            await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ callsign })
+            });
+            showNotification('Callsign updated successfully.', 'success');
+            populateAdminTools();
+            populatePilotDatabase();
+        } catch (error) {
+            showNotification(`Failed to update callsign: ${error.message}`, 'error');
+        }
+    });
+
+    // --------------------------
+    // INITIAL DATA FETCH
+    // --------------------------
     fetchUserData();
 
+    // --------------------------
     // Mobile menu logic
+    // --------------------------
     const hamburger = document.querySelector('.hamburger-menu');
     const navMenu = document.querySelector('.nav-menu');
     if (hamburger) {

@@ -44,207 +44,229 @@
                 </aside>
 
                 <div class="dashboard-content">
-                    <div class="tabs-container">
+                    <!-- Tabs wrapper: includes both .tabs (for JS) and .tabs-container (for your CSS) -->
+                    <div class="tabs tabs-container">
                         <button class="tab-link active" data-tab="tab-profile"><i class="fas fa-user-edit"></i> My Profile</button>
                         <button class="tab-link" data-tab="tab-password"><i class="fas fa-key"></i> Security</button>
                         <button id="community-tab-link" class="tab-link" data-tab="tab-community" style="display: none;"><i class="fas fa-users"></i> Community</button>
                         <button id="admin-tab-link" class="tab-link" data-tab="tab-admin" style="display: none;"><i class="fas fa-user-shield"></i> Admin Tools</button>
+                        <!-- Pilot tab (hidden by default; shown/created for admins by JS) -->
+                        <button id="pilot-tab-link" class="tab-link" data-tab="tab-pilots" style="display: none;"><i class="fas fa-database"></i> Pilot Database</button>
                     </div>
 
-                    <div id="tab-profile" class="tab-content active">
-                        <h2>Update Profile Information</h2>
-                        <p>Warning: The Bio and the Name will be posted to the staff page once clicked Save Changes, don't share sensitive information.</p>
-                        <form id="profile-form" class="dashboard-form">
-                            <div class="form-group">
-    <label for="profile-name">Full Name</label>
-    <input type="text" id="profile-name" required>
-</div>
-<div class="form-group">
-    <label for="profile-bio">About Me (Bio)</label>
-    <textarea id="profile-bio" rows="4"></textarea>
-</div>
-<hr style="margin: 2rem 0;">
-<div class="form-group">
-    <label for="profile-discord">Discord Username</label>
-    <input type="text" id="profile-discord" placeholder="e.g., username#0000">
-</div>
-<div class="form-group">
-    <label for="profile-ifc">Infinite Flight Community Profile URL</label>
-    <input type="url" id="profile-ifc" placeholder="e.g., https://community.infiniteflight.com/u/username">
-</div>
-<div class="form-group">
-    <label for="profile-youtube">YouTube Channel URL</label>
-    <input type="url" id="profile-youtube" placeholder="e.g., https://www.youtube.com/channel/yourchannel">
-</div>
-<div class="form-group">
-    <label for="profile-preferred">Preferred Contact Method</label>
-    <select id="profile-preferred">
-        <option value="none">None</option>
-        <option value="discord">Discord</option>
-        <option value="ifc">IFC</option>
-        <option value="youtube">YouTube</option>
-    </select>
-</div>
-<hr style="margin: 2rem 0;">
-<div class="form-group">
-    <label for="profile-picture">Update Profile Picture</label>
-    <input type="file" id="profile-picture" accept="image/*">
-</div>
-<button type="submit" class="cta-button">Save Changes</button>
-                        </form>
-                    </div>
-
-                    <div id="tab-password" class="tab-content">
-                        <h2>Change Password</h2>
-                        <p>For your security, choose a strong, unique password.</p>
-                        <form id="password-form" class="dashboard-form">
-                            <div class="form-group">
-                                <label for="new-password">New Password</label>
-                                <input type="password" id="new-password" required>
-                            </div>
-                             <div class="form-group">
-                                <label for="confirm-password">Confirm New Password</label>
-                                <input type="password" id="confirm-password" required>
-                            </div>
-                            <button type="submit" class="cta-button">Update Password</button>
-                        </form>
-                    </div>
-
-                    <div id="tab-admin" class="tab-content">
-                        <h2>Administrator Tools</h2>
-                        <p>Manage team members and site settings.</p>
-
-                        <div id="manage-users-panel">
-                            <h3>Manage Team Members</h3>
-                            <div id="user-list-container">
-                                <p>Loading users...</p>
-                            </div>
-                        </div>
-
-                        <hr style="margin: 2rem 0;">
-
-                        <div id="admin-panel">
-                            <h3>Add New Team Member</h3>
-                            <form id="add-member-form" class="dashboard-form">
+                    <!-- Tab contents wrapper used by the JS for injecting dynamic tabs -->
+                    <div class="tab-contents">
+                        <div id="tab-profile" class="tab-content active">
+                            <h2>Update Profile Information</h2>
+                            <p>Warning: The Bio and the Name will be posted to the staff page once clicked Save Changes, don't share sensitive information.</p>
+                            <form id="profile-form" class="dashboard-form">
                                 <div class="form-group">
-                                    <label for="new-member-email">Email Address</label>
-                                    <input type="email" id="new-member-email" required>
+                                    <label for="profile-name">Full Name</label>
+                                    <input type="text" id="profile-name" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-member-password">Initial Password</label>
-                                    <input type="password" id="new-member-password" required>
+                                    <label for="profile-bio">About Me (Bio)</label>
+                                    <textarea id="profile-bio" rows="4"></textarea>
+                                </div>
+                                <hr style="margin: 2rem 0;">
+                                <div class="form-group">
+                                    <label for="profile-discord">Discord Username</label>
+                                    <input type="text" id="profile-discord" placeholder="e.g., username#0000">
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-member-role">Assign Role</label>
-                                    <select id="new-member-role" required>
-                                        <optgroup label="General Roles">
-                                            <option value="staff">Staff</option>
-                                            <option value="pilot">Pilot</option>
-                                            <option value="admin">Admin (Site Control)</option>
-                                        </optgroup>
-                                        <optgroup label="Leadership & Management">
-                                            <option value="Chief Executive Officer (CEO)">Chief Executive Officer (CEO)</option>
-                                            <option value="Chief Operating Officer (COO)">Chief Operating Officer (COO)</option>
-                                            <option value="PIREP Manager (PM)">PIREP Manager (PM)</option>
-                                            <option value="Pilot Relations & Recruitment Manager (PR)">Pilot Relations & Recruitment Manager (PR)</option>
-                                            <option value="Technology & Design Manager (TDM)">Technology & Design Manager (TDM)</option>
-                                            <option value="Head of Training (COT)">Head of Training (COT)</option>
-                                            <option value="Chief Marketing Officer (CMO)">Chief Marketing Officer (CMO)</option>
-                                            <option value="Route Manager (RM)">Route Manager (RM)</option>
-                                            <option value="Events Manager (EM)">Events Manager (EM)</option>
-                                        </optgroup>
-                                        <optgroup label="Flight Operations">
-                                            <option value="Flight Instructor (FI)">Flight Instructor (FI)</option>
-                                        </optgroup>
+                                    <label for="profile-ifc">Infinite Flight Community Profile URL</label>
+                                    <input type="url" id="profile-ifc" placeholder="e.g., https://community.infiniteflight.com/u/username">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-youtube">YouTube Channel URL</label>
+                                    <input type="url" id="profile-youtube" placeholder="e.g., https://www.youtube.com/channel/yourchannel">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-preferred">Preferred Contact Method</label>
+                                    <select id="profile-preferred">
+                                        <option value="none">None</option>
+                                        <option value="discord">Discord</option>
+                                        <option value="ifc">IFC</option>
+                                        <option value="youtube">YouTube</option>
                                     </select>
                                 </div>
-                                <button type="submit" class="cta-button">Create Member</button>
+                                <hr style="margin: 2rem 0;">
+                                <div class="form-group">
+                                    <label for="profile-picture">Update Profile Picture</label>
+                                    <input type="file" id="profile-picture" accept="image/*">
+                                </div>
+                                <button type="submit" class="cta-button">Save Changes</button>
                             </form>
                         </div>
 
-                        <hr style="margin: 2rem 0;">
-
-                        <div id="view-logs-panel">
-                            <h3>Admin Activity Log</h3>
-                            <div id="log-container">
-                                <p>Loading logs...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="tab-community" class="tab-content">
-                        <h2>Community Content Management</h2>
-                        <p>Create and manage events and weekly highlights for the community page.</p>
-
-                        <div id="create-event-panel">
-                            <h3>Post a New Event</h3>
-                            <form id="create-event-form" class="dashboard-form">
+                        <div id="tab-password" class="tab-content">
+                            <h2>Change Password</h2>
+                            <p>For your security, choose a strong, unique password.</p>
+                            <form id="password-form" class="dashboard-form">
                                 <div class="form-group">
-                                    <label for="event-title">Event Title</label>
-                                    <input type="text" id="event-title" required>
+                                    <label for="new-password">New Password</label>
+                                    <input type="password" id="new-password" required>
                                 </div>
-                                <div class="form-group">
-                                    <label for="event-date">Event Date & Time</label>
-                                    <input type="datetime-local" id="event-date" required>
+                                 <div class="form-group">
+                                    <label for="confirm-password">Confirm New Password</label>
+                                    <input type="password" id="confirm-password" required>
                                 </div>
-                                <div class="form-group">
-                                    <label for="event-description">Description</label>
-                                    <textarea id="event-description" rows="4" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label for="event-image">Event Image</label>
-                                    <input type="file" id="event-image" accept="image/*">
-                                </div>
-                                <button type="submit" class="cta-button">Post Event</button>
+                                <button type="submit" class="cta-button">Update Password</button>
                             </form>
                         </div>
 
-                        <hr style="margin: 2rem 0;">
+                        <div id="tab-admin" class="tab-content">
+                            <h2>Administrator Tools</h2>
+                            <p>Manage team members and site settings.</p>
 
-                        <div id="create-highlight-panel">
-                            <h3>Post a Weekly Highlight</h3>
-                            <form id="create-highlight-form" class="dashboard-form">
-                                <div class="form-group">
-                                    <label for="highlight-title">Highlight Title (e.g., Best Picture of the Week)</label>
-                                    <input type="text" id="highlight-title" required>
+                            <div id="manage-users-panel">
+                                <h3>Manage Team Members</h3>
+                                <div id="user-list-container">
+                                    <p>Loading users...</p>
                                 </div>
-                                <div class="form-group">
-                                    <label for="highlight-winner">Winner / Pilot Name</label>
-                                    <input type="text" id="highlight-winner" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="highlight-description">Brief Description</label>
-                                    <textarea id="highlight-description" rows="3"></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label for="highlight-image">Winning Picture/Screenshot</label>
-                                    <input type="file" id="highlight-image" accept="image/*" required>
-                                </div>
-                                <button type="submit" class="cta-button">Post Highlight</button>
-                            </form>
-                        </div>
+                            </div>
 
-                        <hr style="margin: 2rem 0;">
+                            <hr style="margin: 2rem 0;">
 
-                        <div id="manage-events-panel">
-                            <h3>Manage Existing Events</h3>
-                            <div id="manage-events-container">
-                                <p>Loading events...</p>
+                            <div id="admin-panel">
+                                <h3>Add New Team Member</h3>
+                                <form id="add-member-form" class="dashboard-form">
+                                    <div class="form-group">
+                                        <label for="new-member-email">Email Address</label>
+                                        <input type="email" id="new-member-email" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-member-password">Initial Password</label>
+                                        <input type="password" id="new-member-password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-member-role">Assign Role</label>
+                                        <select id="new-member-role" required>
+                                            <optgroup label="General Roles">
+                                                <option value="staff">Staff</option>
+                                                <option value="pilot">Pilot</option>
+                                                <option value="admin">Admin (Site Control)</option>
+                                            </optgroup>
+                                            <optgroup label="Leadership & Management">
+                                                <option value="Chief Executive Officer (CEO)">Chief Executive Officer (CEO)</option>
+                                                <option value="Chief Operating Officer (COO)">Chief Operating Officer (COO)</option>
+                                                <option value="PIREP Manager (PM)">PIREP Manager (PM)</option>
+                                                <option value="Pilot Relations & Recruitment Manager (PR)">Pilot Relations & Recruitment Manager (PR)</option>
+                                                <option value="Technology & Design Manager (TDM)">Technology & Design Manager (TDM)</option>
+                                                <option value="Head of Training (COT)">Head of Training (COT)</option>
+                                                <option value="Chief Marketing Officer (CMO)">Chief Marketing Officer (CMO)</option>
+                                                <option value="Route Manager (RM)">Route Manager (RM)</option>
+                                                <option value="Events Manager (EM)">Events Manager (EM)</option>
+                                            </optgroup>
+                                            <optgroup label="Flight Operations">
+                                                <option value="Flight Instructor (FI)">Flight Instructor (FI)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+
+                                    <!-- NEW: Callsign input for add-member form -->
+                                    <div class="form-group">
+                                        <label for="new-member-callsign">Callsign (optional)</label>
+                                        <input type="text" id="new-member-callsign" name="callsign" placeholder="e.g. INDGO-01">
+                                    </div>
+
+                                    <button type="submit" class="cta-button">Create Member</button>
+                                </form>
+                            </div>
+
+                            <hr style="margin: 2rem 0;">
+
+                            <div id="view-logs-panel">
+                                <h3>Admin Activity Log</h3>
+                                <div id="log-container">
+                                    <p>Loading logs...</p>
+                                </div>
                             </div>
                         </div>
 
-                        <hr style="margin: 2rem 0;">
+                        <div id="tab-community" class="tab-content">
+                            <h2>Community Content Management</h2>
+                            <p>Create and manage events and weekly highlights for the community page.</p>
 
-                        <div id="manage-highlights-panel">
-                            <h3>Manage Existing Highlights</h3>
-                            <div id="manage-highlights-container">
-                                <p>Loading highlights...</p>
+                            <div id="create-event-panel">
+                                <h3>Post a New Event</h3>
+                                <form id="create-event-form" class="dashboard-form">
+                                    <div class="form-group">
+                                        <label for="event-title">Event Title</label>
+                                        <input type="text" id="event-title" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="event-date">Event Date & Time</label>
+                                        <input type="datetime-local" id="event-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="event-description">Description</label>
+                                        <textarea id="event-description" rows="4" required></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="event-image">Event Image</label>
+                                        <input type="file" id="event-image" accept="image/*">
+                                    </div>
+                                    <button type="submit" class="cta-button">Post Event</button>
+                                </form>
+                            </div>
+
+                            <hr style="margin: 2rem 0;">
+
+                            <div id="create-highlight-panel">
+                                <h3>Post a Weekly Highlight</h3>
+                                <form id="create-highlight-form" class="dashboard-form">
+                                    <div class="form-group">
+                                        <label for="highlight-title">Highlight Title (e.g., Best Picture of the Week)</label>
+                                        <input type="text" id="highlight-title" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="highlight-winner">Winner / Pilot Name</label>
+                                        <input type="text" id="highlight-winner" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="highlight-description">Brief Description</label>
+                                        <textarea id="highlight-description" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="highlight-image">Winning Picture/Screenshot</label>
+                                        <input type="file" id="highlight-image" accept="image/*" required>
+                                    </div>
+                                    <button type="submit" class="cta-button">Post Highlight</button>
+                                </form>
+                            </div>
+
+                            <hr style="margin: 2rem 0;">
+
+                            <div id="manage-events-panel">
+                                <h3>Manage Existing Events</h3>
+                                <div id="manage-events-container">
+                                    <p>Loading events...</p>
+                                </div>
+                            </div>
+
+                            <hr style="margin: 2rem 0;">
+
+                            <div id="manage-highlights-panel">
+                                <h3>Manage Existing Highlights</h3>
+                                <div id="manage-highlights-container">
+                                    <p>Loading highlights...</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+                        <!-- NEW: Pilot Database tab content (initially hidden) -->
+                        <div id="tab-pilots" class="tab-content" style="display: none;">
+                            <h2>Pilot Database</h2>
+                            <p>View pilots, ranks, flight hours and manage callsigns.</p>
+                            <div id="pilot-db-container">
+                                <p>Loading pilots...</p>
+                            </div>
+                        </div>
+                    </div> <!-- /.tab-contents -->
+                </div> <!-- /.dashboard-content -->
+            </div> <!-- /.dashboard-layout -->
+        </div> <!-- /.fade-in -->
         
         <div id="cropper-modal" style="display: none;">
             <div class="cropper-modal-overlay"></div>
