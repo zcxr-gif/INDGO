@@ -34,6 +34,10 @@ body {
     background-size: auto;
 }
 
+.nav-menu li.auth-link {
+    visibility: hidden;
+}
+
 /* Define the keyframes for the movement */
 @keyframes gradient-move {
     0% { background-position: 0% 50%; }

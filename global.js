@@ -27,12 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
     const navMenu = document.querySelector('.nav-menu');
 
-    // Function to reveal the default login/join buttons.
     const showLoggedOutButtons = () => {
         const authLinks = document.querySelectorAll('.auth-link');
         authLinks.forEach(link => {
             if (link) {
-                link.style.display = 'list-item';
+                // Change visibility to 'visible' to make them appear
+                link.style.visibility = 'visible'; 
             }
         });
     };
@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (token) {
         fetchUserData(token);
     } else {
-        showLoggedOutButtons();
+        // This now reveals the hidden buttons
+        showLoggedOutButtons(); 
     }
 
     async function fetchUserData(token) {
