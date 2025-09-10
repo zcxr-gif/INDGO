@@ -1517,10 +1517,6 @@ a {
     padding: 0.5rem;
 }
 
-.auth-link {
-    display: none;
-}
-
 * --- Community Page --- */
 .community-grid {
     display: grid;
