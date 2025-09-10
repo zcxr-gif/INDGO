@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).addTo(map);
 
     // 2. DEFINE DATA SOURCES
-    const routesSheetURL = 'IndGo Air Virtual Routes - Indgo Air VA.csv';
+    const routesSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7l8lmvc8bUf9smp7qPktT4VZ-LKUQeH3Jvw0H3TpIviZ-oei01gwjLZ-R6ONGGOdtCy64wsYGVgDu/pub?output=csv';
     const airportsDataURL = 'airports.json';
 
     // Helper function to extract ICAO code from text
