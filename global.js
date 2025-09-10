@@ -65,28 +65,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateNavbarForLoggedInUser(user) {
-        const loginLi = navMenu.querySelector('li.auth-link:has(a[href="login.html"])');
-const joinLi = navMenu.querySelector('li.auth-link:has(a[href="apply.html"])');
+    const navMenu = document.querySelector('.nav-menu');
+    
+    // Find the actual <a> links first
+    const loginLink = navMenu.querySelector('a[href="login.html"]');
+    const joinLink = navMenu.querySelector('a[href="apply.html"]');
 
-        if (loginLi && joinLi) {
-            const welcomeLi = document.createElement('li');
-            welcomeLi.className = 'nav-item';
-            welcomeLi.innerHTML = `<a href="dashboard.html" class="nav-link">Hello, ${user.name}</a>`;
+    // Then, find their closest <li> parent that has the .auth-link class
+    const loginLi = loginLink ? loginLink.closest('li.auth-link') : null;
+    const joinLi = joinLink ? joinLink.closest('li.auth-link') : null;
 
-            const logoutLi = document.createElement('li');
-            logoutLi.className = 'nav-item';
-            const logoutButton = document.createElement('a');
-            logoutButton.href = '#';
-            logoutButton.className = 'nav-link nav-button';
-            logoutButton.textContent = 'Logout';
-            logoutButton.onclick = () => {
-                localStorage.removeItem('authToken');
-                window.location.href = 'index.html';
-            };
-            logoutLi.appendChild(logoutButton);
+    if (loginLi && joinLi) {
+        const welcomeLi = document.createElement('li');
+        welcomeLi.className = 'nav-item';
+        welcomeLi.innerHTML = `<a href="dashboard.html" class="nav-link">Hello, ${user.name}</a>`;
 
-            navMenu.replaceChild(welcomeLi, loginLi);
-            navMenu.replaceChild(logoutLi, joinLi);
-        }
+        const logoutLi = document.createElement('li');
+        logoutLi.className = 'nav-item';
+        const logoutButton = document.createElement('a');
+        logoutButton.href = '#';
+        logoutButton.className = 'nav-link nav-button';
+        logoutButton.textContent = 'Logout';
+        logoutButton.onclick = () => {
+            localStorage.removeItem('authToken');
+            window.location.href = 'index.html';
+        };
+        logoutLi.appendChild(logoutButton);
+
+        navMenu.replaceChild(welcomeLi, loginLi);
+        navMenu.replaceChild(logoutLi, joinLi);
     }
+}
+
+    // global.js
+
+function updateNavbarForLoggedInUser(user) {
+    // Find the parent list for the nav links
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) {
+        console.error('Debug: Could not find .nav-menu element!');
+        return;
+    }
+
+    // Find the specific list items to replace
+    const loginLi = navMenu.querySelector('li.auth-link:has(a[href="login.html"])');
+    const joinLi = navMenu.querySelector('li.auth-link:has(a[href="apply.html"])');
+
+    // *** ADD THESE LINES FOR DEBUGGING ***
+    console.log('Debug: User data received:', user);
+    console.log('Debug: Found Login LI:', loginLi);
+    console.log('Debug: Found Join Us LI:', joinLi);
+    // ***************************************
+
+    if (loginLi && joinLi) {
+        // ... rest of the function
+    } else {
+        console.error('Debug: Failed to find loginLi or joinLi. Cannot update navbar.');
+    }
+}
 });
