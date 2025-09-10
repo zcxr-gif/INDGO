@@ -1,4 +1,4 @@
-// global.js (Revised with Notification Helper)
+// global.js (Fixed and Simplified)
 
 /**
  * Displays a toast notification using Toastify.js.
@@ -27,20 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
     const navMenu = document.querySelector('.nav-menu');
 
-    // Function to reveal the default login/join buttons.
-    const showLoggedOutButtons = () => {
-        const authLinks = document.querySelectorAll('.auth-link');
-        authLinks.forEach(link => {
-            if (link) {
-                link.style.display = 'list-item';
-            }
-        });
-    };
-
+    // If a token exists, try to fetch user data and update the navbar.
+    // If no token exists, the default "Login" and "Join Us" buttons will remain visible.
     if (token) {
         fetchUserData(token);
-    } else {
-        showLoggedOutButtons();
     }
 
     async function fetchUserData(token) {
@@ -49,9 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            // If the token is invalid or expired, remove it. The default login buttons will show.
             if (!response.ok) {
                 localStorage.removeItem('authToken');
-                showLoggedOutButtons();
                 return;
             }
 
@@ -60,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error fetching user data for navbar:', error);
-            showLoggedOutButtons();
+            // On error, the default login buttons will remain, which is the desired fallback.
         }
     }
 
