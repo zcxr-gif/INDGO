@@ -66,15 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNavbarForLoggedInUser(user) {
     const navMenu = document.querySelector('.nav-menu');
-    
-    // Find the actual <a> links first
+
+    // 1. Find the <a> link elements directly.
     const loginLink = navMenu.querySelector('a[href="login.html"]');
     const joinLink = navMenu.querySelector('a[href="apply.html"]');
 
-    // Then, find their closest <li> parent that has the .auth-link class
+    // 2. Find their parent <li> elements using .closest(). This is more reliable.
     const loginLi = loginLink ? loginLink.closest('li.auth-link') : null;
     const joinLi = joinLink ? joinLink.closest('li.auth-link') : null;
 
+    // This 'if' check will now pass, and the rest of your code will execute.
     if (loginLi && joinLi) {
         const welcomeLi = document.createElement('li');
         welcomeLi.className = 'nav-item';
@@ -94,33 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         navMenu.replaceChild(welcomeLi, loginLi);
         navMenu.replaceChild(logoutLi, joinLi);
-    }
-}
-
-    // global.js
-
-function updateNavbarForLoggedInUser(user) {
-    // Find the parent list for the nav links
-    const navMenu = document.querySelector('.nav-menu');
-    if (!navMenu) {
-        console.error('Debug: Could not find .nav-menu element!');
-        return;
-    }
-
-    // Find the specific list items to replace
-    const loginLi = navMenu.querySelector('li.auth-link:has(a[href="login.html"])');
-    const joinLi = navMenu.querySelector('li.auth-link:has(a[href="apply.html"])');
-
-    // *** ADD THESE LINES FOR DEBUGGING ***
-    console.log('Debug: User data received:', user);
-    console.log('Debug: Found Login LI:', loginLi);
-    console.log('Debug: Found Join Us LI:', joinLi);
-    // ***************************************
-
-    if (loginLi && joinLi) {
-        // ... rest of the function
     } else {
-        console.error('Debug: Failed to find loginLi or joinLi. Cannot update navbar.');
+        // This error should no longer appear.
+        console.error('Failed to find loginLi or joinLi. Check HTML structure and JS selectors.');
     }
 }
 });
