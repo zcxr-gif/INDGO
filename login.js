@@ -1,4 +1,4 @@
-// login.js (Fully Fixed with Notifications & Password Toggle)
+// login.js (Updated for Universal Redirection)
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
@@ -24,12 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     localStorage.setItem('authToken', data.token); 
                     
-                    // This function is defined in global.js
                     showNotification('Login successful! Redirecting...', 'success');
                     
+                    // ALL users are now redirected to the crew center
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500); // Wait 1.5 seconds before redirecting
+                        window.location.href = 'crew-center.html';
+                    }, 1500); 
                 } else {
                     showNotification(`Login Failed: ${data.message}`, 'error');
                 }
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- NEW: Password Visibility Toggle Logic ---
+    // --- Password Visibility Toggle Logic ---
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
     const eyeOpen = document.getElementById('eye-open');
@@ -48,11 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (togglePassword && passwordInput && eyeOpen && eyeClosed) {
         togglePassword.addEventListener('click', () => {
-            // Toggle the type attribute of the password input
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
 
-            // Toggle the visibility of the eye icons
             if (type === 'password') {
                 eyeOpen.style.display = 'block';
                 eyeClosed.style.display = 'none';
