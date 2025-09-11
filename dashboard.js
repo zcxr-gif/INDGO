@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminTabLink = document.getElementById('admin-tab-link');
     const communityTabLink = document.getElementById('community-tab-link');
     const pilotManagementTabLink = document.getElementById('pilot-management-tab-link');
-    const pirepTabLink = document.getElementById('pirep-tab-link'); // **NEW**
+    const pirepTabLink = document.getElementById('pirep-tab-link');
+    const rosterTabLink = document.getElementById('roster-tab-link'); // **NEW**
 
     // --- PROFILE CARD ELEMENTS ---
     const profileCardPicture = document.getElementById('profile-card-picture');
@@ -36,7 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const logContainer = document.getElementById('log-container');
     const manageEventsContainer = document.getElementById('manage-events-container');
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
-    const pendingPirepsContainer = document.getElementById('pending-pireps-container'); // **NEW**
+    const pendingPirepsContainer = document.getElementById('pending-pireps-container');
+    const rosterManagementContainer = document.getElementById('tab-roster-management'); // **NEW**
     let pilotTabLink = document.getElementById('pilot-tab-link');
     let pilotTabContent = document.getElementById('tab-pilots');
     
@@ -55,19 +57,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // --- SAFE FETCH WRAPPER ---
+    // --- SAFE FETCH WRAPPER (UPDATED) ---
     async function safeFetch(url, options = {}) {
         options.headers = options.headers || {};
         if (!options.headers.Authorization && token) {
             options.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Don't set Content-Type for FormData, browser does it with boundary
+        if (!(options.body instanceof FormData) && !options.headers['Content-Type']) {
+            options.headers['Content-Type'] = 'application/json';
+        }
+
         const res = await fetch(url, options);
         let data = null;
-        try {
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
             data = await res.json();
-        } catch (err) {
-            // Non-JSON response
+        } else {
+            // Handle non-JSON responses gracefully
+            const text = await res.text();
+            data = { message: text }; 
         }
+
         if (!res.ok) {
             const msg = (data && (data.message || data.error)) || `Server error: ${res.status}`;
             const err = new Error(msg);
@@ -78,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return data;
     }
 
-    // --- UI NOTIFICATION HELPER (REPLACED) ---
+    // --- UI NOTIFICATION HELPER ---
     function showNotification(message, type = 'info') {
         Toastify({
             text: message,
@@ -95,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).showToast();
     }
 
-    // --- FETCH USER DATA & SETUP UI ---
+    // --- FETCH USER DATA & SETUP UI (UPDATED)---
     async function fetchUserData() {
         try {
             const user = await safeFetch(`${API_BASE_URL}/api/me`);
@@ -115,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('profile-youtube')) document.getElementById('profile-youtube').value = user.youtube || '';
             if (document.getElementById('profile-preferred')) document.getElementById('profile-preferred').value = user.preferredContact || 'none';
 
-            // --- ROLE-BASED TAB VISIBILITY (UPDATED) ---
+            // --- ROLE-BASED TAB VISIBILITY ---
             if (user.role === 'admin') {
                 if (adminTabLink) adminTabLink.style.display = 'inline-block';
                 populateAdminTools();
@@ -135,11 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 populatePilotManagement();
             }
             
-            // **NEW**: Show PIREP tab for authorized roles
             const pirepManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'PIREP Manager (PM)'];
             if (pirepManagerRoles.includes(user.role)) {
                 if (pirepTabLink) pirepTabLink.style.display = 'inline-block';
                 loadPendingPireps();
+            }
+
+            // **NEW**: Show Roster Management tab for authorized roles
+            const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
+            if (routeManagerRoles.includes(user.role)) {
+                if (rosterTabLink) rosterTabLink.style.display = 'inline-block';
+                populateRosterManagement();
             }
 
             document.querySelector('.fade-in')?.classList.add('visible');
@@ -150,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- PIREP MANAGEMENT (NEW SECTION) ---
+    // --- PIREP MANAGEMENT ---
     async function loadPendingPireps() {
         if (!pendingPirepsContainer) return;
         pendingPirepsContainer.innerHTML = '<p>Loading pending reports...</p>';
@@ -238,6 +257,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- ROSTER MANAGEMENT (NEW SECTION) ---
+    function populateRosterManagement() {
+        if (!rosterManagementContainer) return;
+        
+        rosterManagementContainer.innerHTML = `
+            <h2>Roster Management ✈️</h2>
+            <p>Create and manage daily rosters for the Sector Ops system.</p>
+            
+            <div id="create-roster-panel">
+                <h3>Create New Roster</h3>
+                <form id="create-roster-form" class="dashboard-form">
+                    <div class="form-group"><label for="roster-name">Roster Name</label><input type="text" id="roster-name" required></div>
+                    <div class="form-group"><label for="roster-hub">Hub ICAO</label><input type="text" id="roster-hub" required maxlength="4"></div>
+                    <div class="form-group"><label for="roster-time">Total Estimated Flight Time (Hours)</label><input type="number" id="roster-time" step="0.1" min="0" required></div>
+                    <h4>Roster Legs</h4>
+                    <div id="roster-legs-container">
+                        <div class="roster-leg-input">
+                            <input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4">
+                        </div>
+                    </div>
+                    <button type="button" id="add-leg-btn" class="cta-button secondary">Add Leg</button>
+                    <hr style="margin: 1rem 0;">
+                    <button type="submit" class="cta-button">Create Roster</button>
+                </form>
+            </div>
+            <hr style="margin: 2rem 0;">
+            <div id="manage-rosters-panel">
+                <h3>Existing Rosters</h3>
+                <div id="manage-rosters-container"><p>Loading rosters...</p></div>
+            </div>
+        `;
+
+        loadAndRenderRosters();
+
+        document.getElementById('add-leg-btn').addEventListener('click', () => {
+            const legContainer = document.getElementById('roster-legs-container');
+            const newLeg = document.createElement('div');
+            newLeg.className = 'roster-leg-input';
+            newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn">&times;</button>`;
+            legContainer.appendChild(newLeg);
+        });
+
+        document.getElementById('roster-legs-container').addEventListener('click', e => {
+            if (e.target.classList.contains('remove-leg-btn')) {
+                e.target.parentElement.remove();
+            }
+        });
+
+        document.getElementById('create-roster-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const legs = Array.from(document.querySelectorAll('.roster-leg-input')).map(legDiv => {
+                const inputs = legDiv.querySelectorAll('input');
+                return {
+                    flightNumber: inputs[0].value.toUpperCase(),
+                    departure: inputs[1].value.toUpperCase(),
+                    arrival: inputs[2].value.toUpperCase(),
+                };
+            });
+
+            const rosterData = {
+                name: document.getElementById('roster-name').value,
+                hub: document.getElementById('roster-hub').value.toUpperCase(),
+                totalFlightTime: parseFloat(document.getElementById('roster-time').value),
+                legs: legs,
+            };
+
+            try {
+                await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
+                showNotification('Roster created successfully!', 'success');
+                e.target.reset();
+                document.getElementById('roster-legs-container').innerHTML = `<div class="roster-leg-input"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
+                loadAndRenderRosters();
+            } catch (error) {
+                showNotification(`Error creating roster: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    async function loadAndRenderRosters() {
+        const container = document.getElementById('manage-rosters-container');
+        if (!container) return;
+        try {
+            const rosters = await safeFetch(`${API_BASE_URL}/api/rosters`);
+            if (!rosters || rosters.length === 0) {
+                container.innerHTML = '<p>No rosters have been created yet.</p>';
+                return;
+            }
+            container.innerHTML = rosters.map(roster => `
+                <div class="user-manage-card">
+                    <div class="user-info">
+                        <strong>${roster.name}</strong> (${roster.hub})
+                        <small>${roster.legs.length} legs, ${roster.totalFlightTime.toFixed(1)} hrs</small>
+                    </div>
+                    <div class="user-controls">
+                        <button class="delete-user-btn delete-roster-btn" data-id="${roster._id}" data-name="${roster.name}"><i class="fas fa-trash-alt"></i> Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
+        }
+    }
+
+    rosterManagementContainer?.addEventListener('click', async e => {
+        const deleteButton = e.target.closest('.delete-roster-btn');
+        if (deleteButton) {
+            const rosterId = deleteButton.dataset.id;
+            const rosterName = deleteButton.dataset.name;
+            if (confirm(`Are you sure you want to delete the roster "${rosterName}"?`)) {
+                try {
+                    await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
+                    showNotification('Roster deleted successfully.', 'success');
+                    loadAndRenderRosters();
+                } catch (error) {
+                    showNotification(`Error deleting roster: ${error.message}`, 'error');
+                }
+            }
+        }
+    });
+
     // --- TAB SWITCHING LOGIC (UPDATED) ---
     function attachTabListeners() {
         const tabLinks = document.querySelectorAll('.tab-link');
@@ -256,15 +395,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (tabId === 'tab-pilots') populatePilotDatabase();
                 if (tabId === 'tab-admin') populateAdminTools();
                 if (tabId === 'tab-pirep-management') loadPendingPireps();
+                if (tabId === 'tab-roster-management') loadAndRenderRosters(); // **NEW**
             });
         });
     }
 
-    // --- ADMIN: POPULATE USERS & LOGS ---
+    // --- ADMIN: POPULATE USERS & LOGS (UPDATED) ---
     async function populateAdminTools() {
         try {
             const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
             renderUserList(users);
+            renderLiveOperations(users); // **NEW**
 
             const logs = await safeFetch(`${API_BASE_URL}/api/logs`, { method: 'GET' });
             renderLogList(logs);
@@ -343,6 +484,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         logContainer.innerHTML = logEntries;
     }
+
+    // --- RENDER LIVE OPERATIONS (NEW) ---
+    function renderLiveOperations(users) {
+        const container = document.getElementById('live-ops-container');
+        if (!container) return;
+
+        const onDutyPilots = users.filter(u => u.dutyStatus === 'ON_DUTY');
+        
+        if (onDutyPilots.length === 0) {
+            container.innerHTML = '<p>No pilots are currently on duty.</p>';
+            return;
+        }
+
+        // Fetch rosters to map roster IDs to names
+        safeFetch(`${API_BASE_URL}/api/rosters`).then(rosters => {
+            const rosterMap = new Map(rosters.map(r => [r._id, r.name]));
+            container.innerHTML = onDutyPilots.map(pilot => `
+                <div class="live-ops-item">
+                    <strong>${pilot.name} (${pilot.callsign || 'N/A'})</strong> is ON DUTY.
+                    <small>Roster: ${rosterMap.get(pilot.currentRoster) || 'N/A'}</small>
+                </div>
+            `).join('');
+        }).catch(err => {
+            container.innerHTML = '<p style="color: red;">Could not load roster data for live ops.</p>';
+        });
+    }
+
 
     // --- COMMUNITY: EVENTS & HIGHLIGHTS ---
     async function populateCommunityManagement() {
@@ -553,6 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // Note: safeFetch handles FormData content type automatically
             const result = await safeFetch(`${API_BASE_URL}/api/me`, {
                 method: 'PUT',
                 body: formData
@@ -575,17 +744,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PASSWORD UPDATE ---
     passwordForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const currentPassword = document.getElementById('current-password').value;
         const newPassword = document.getElementById('new-password').value;
         const confirmPassword = document.getElementById('confirm-password').value;
+        
         if (newPassword !== confirmPassword) {
-            showNotification('Passwords do not match.', 'error');
+            showNotification('New passwords do not match.', 'error');
             return;
         }
+        
         try {
             await safeFetch(`${API_BASE_URL}/api/me/password`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newPassword })
+                body: JSON.stringify({ currentPassword, newPassword })
             });
             showNotification('Password updated successfully!', 'success');
             passwordForm.reset();
@@ -621,7 +792,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await safeFetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password, role, callsign })
                 });
                 showNotification('User created successfully!', 'success');
@@ -668,7 +838,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ callsign })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
@@ -689,7 +858,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ newRole })
                     });
                     showNotification('User role updated successfully.', 'success');
@@ -738,7 +906,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await safeFetch(`${API_BASE_URL}/api/users/${userId}/rank`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ newRank })
                 });
                 showNotification('Pilot rank updated successfully!', 'success');
@@ -763,7 +930,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ callsign })
             });
             showNotification('Callsign updated successfully.', 'success');
