@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
     const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
-    // --- Notification Function (to match staff dashboard) ---
+    // --- Notification Function (No changes) ---
     function showNotification(message, type) {
         let backgroundColor;
         switch (type) {
@@ -38,7 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const profilePictureElem = document.getElementById('profile-picture');
     const pirepForm = document.getElementById('pirep-form');
     const logoutButton = document.getElementById('logout-button');
-    
+    const pirepHistoryListElem = document.getElementById('pirep-history-list'); // New
+
     // --- 1. Authentication and Data Fetching ---
 
     if (!token) {
@@ -50,9 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/me`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) {
@@ -68,19 +67,54 @@ document.addEventListener('DOMContentLoaded', () => {
             pilotRankElem.textContent = pilot.rank || 'N/A';
             flightHoursElem.textContent = (pilot.flightHours || 0).toFixed(1);
             
-            if (pilot.imageUrl) {
-                profilePictureElem.src = pilot.imageUrl;
-            } else {
-                profilePictureElem.src = 'default-pfp.png'; 
-            }
+            profilePictureElem.src = pilot.imageUrl || 'default-pfp.png';
 
         } catch (error) {
             console.error('Error fetching pilot data:', error);
             showNotification(error.message, 'error');
         }
     };
+
+    // --- New: Fetch and Display PIREP History ---
+    const fetchPirepHistory = async () => {
+        if (!pirepHistoryListElem) return;
+        pirepHistoryListElem.innerHTML = '<p>Loading history...</p>';
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/me/pireps`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Could not fetch PIREP history.');
+
+            const pireps = await response.json();
+
+            if (pireps.length === 0) {
+                pirepHistoryListElem.innerHTML = '<p>You have not filed any flight reports yet.</p>';
+                return;
+            }
+
+            pirepHistoryListElem.innerHTML = pireps.map(p => `
+                <div class="pirep-history-item">
+                    <div class="pirep-info">
+                        <strong>${p.flightNumber}</strong> (${p.departure} - ${p.arrival})
+                        <small>${new Date(p.createdAt).toLocaleDateString()}</small>
+                    </div>
+                    <div class="pirep-details">
+                        <span>${p.aircraft}</span>
+                        <span>${p.flightTime.toFixed(1)} hrs</span>
+                        <span class="status-badge status-${p.status.toLowerCase()}">${p.status}</span>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            pirepHistoryListElem.innerHTML = `<p class="error-text">${error.message}</p>`;
+            console.error('Error fetching PIREP history:', error);
+        }
+    };
     
+    // Initial data load
     fetchPilotData();
+    fetchPirepHistory();
 
     // --- 2. PIREP Form Submission ---
     
@@ -111,17 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
-
             if (!response.ok) {
                 throw new Error(result.message || 'Failed to file report.');
             }
 
-            showNotification('Flight report filed successfully!', 'success'); 
+            // Modified: Change notification and refresh history
+            showNotification('Report submitted for review!', 'success'); 
             pirepForm.reset();
+            fetchPirepHistory(); // Refresh the PIREP list
             
-            const currentHours = parseFloat(flightHoursElem.textContent);
-            const newHours = currentHours + parseFloat(flightData.flightTime);
-            flightHoursElem.textContent = newHours.toFixed(1);
+            // Removed: Do NOT update flight hours on the client side anymore.
+            // This is now handled by the server upon PIREP approval.
 
         } catch (error) {
             console.error('PIREP submission error:', error);
@@ -132,13 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 3. Logout Functionality ---
+    // --- 3. Logout Functionality (No changes) ---
     
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('authToken');
         showNotification('You have been logged out.', 'info');
-        
-        // Delay redirect to allow notification to be seen
         setTimeout(() => {
             window.location.href = 'login.html';
         }, 1500); 

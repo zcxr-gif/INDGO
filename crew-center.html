@@ -8,8 +8,8 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
+    <div class="page-container">
+        <header class="dashboard-header">
             <h1>Crew Center</h1>
             <div class="header-nav">
                 <a href="dashboard.html" class="nav-button">Staff Dashboard</a>
@@ -17,52 +17,67 @@
             </div>
         </header>
         
-        <main class="dashboard-content">
-            <section class="pilot-info-card">
-                <h2>Your Profile</h2>
-                <div class="profile-details">
+        <main class="crew-center-layout">
+            <aside class="pilot-profile-card">
+                <div class="profile-header">
                     <img id="profile-picture" src="default-pfp.png" alt="Profile Picture" class="pfp">
-                    <div class="info-text">
-                        <p><strong>Name:</strong> <span id="pilot-name">Loading...</span></p>
-                        <p><strong>Callsign:</strong> <span id="pilot-callsign">Loading...</span></p>
-                        <p><strong>Rank:</strong> <span id="pilot-rank">Loading...</span></p>
-                        <p><strong>Flight Hours:</strong> <span id="flight-hours">Loading...</span></p>
+                </div>
+                <div class="profile-body">
+                    <h2 id="pilot-name">Loading...</h2>
+                    <p class="pilot-callsign" id="pilot-callsign">Loading...</p>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <strong>Rank</strong>
+                            <span id="pilot-rank">Loading...</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong>Flight Hours</strong>
+                            <span id="flight-hours">Loading...</span>
+                        </div>
                     </div>
                 </div>
-            </section>
+            </aside>
 
-            <section class="pirep-form-card">
-                <h2>File a Flight Report (PIREP)</h2>
-                <form id="pirep-form">
-                    <div class="form-group">
-                        <label for="flight-number">Flight Number</label>
-                        <input type="text" id="flight-number" name="flightNumber" placeholder="e.g., 6E2024" required>
-                    </div>
-                    <div class="form-group-row">
+            <div class="pilot-actions-container">
+                <section class="content-card">
+                    <h2>File a Flight Report (PIREP)</h2>
+                    <form id="pirep-form">
                         <div class="form-group">
-                            <label for="departure-icao">Departure (ICAO)</label>
-                            <input type="text" id="departure-icao" name="departure" placeholder="e.g., VOHS" required maxlength="4" pattern="[A-Za-z]{4}">
+                            <label for="flight-number">Flight Number</label>
+                            <input type="text" id="flight-number" name="flightNumber" placeholder="e.g., 6E2024" required>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="departure-icao">Departure (ICAO)</label>
+                                <input type="text" id="departure-icao" name="departure" placeholder="e.g., VOHS" required maxlength="4" pattern="[A-Za-z]{4}">
+                            </div>
+                            <div class="form-group">
+                                <label for="arrival-icao">Arrival (ICAO)</label>
+                                <input type="text" id="arrival-icao" name="arrival" placeholder="e.g., VECC" required maxlength="4" pattern="[A-Za-z]{4}">
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="arrival-icao">Arrival (ICAO)</label>
-                            <input type="text" id="arrival-icao" name="arrival" placeholder="e.g., VECC" required maxlength="4" pattern="[A-Za-z]{4}">
+                            <label for="aircraft-type">Aircraft Type</label>
+                            <input type="text" id="aircraft-type" name="aircraft" placeholder="e.g., A320" required>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="aircraft-type">Aircraft Type</label>
-                        <input type="text" id="aircraft-type" name="aircraft" placeholder="e.g., A320" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="flight-time">Flight Time (in hours)</label>
-                        <input type="number" id="flight-time" name="flightTime" placeholder="e.g., 2.5" step="0.1" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="remarks">Remarks (Optional)</label>
-                        <textarea id="remarks" name="remarks" rows="3" placeholder="Any additional notes about the flight..."></textarea>
-                    </div>
-                    <button type="submit" class="submit-btn">File Report</button>
-                </form>
-            </section>
+                        <div class="form-group">
+                            <label for="flight-time">Flight Time (in hours)</label>
+                            <input type="number" id="flight-time" name="flightTime" placeholder="e.g., 2.5" step="0.1" min="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="remarks">Remarks (Optional)</label>
+                            <textarea id="remarks" name="remarks" rows="3" placeholder="Any additional notes about the flight..."></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">File Report</button>
+                    </form>
+                </section>
+
+                <section class="content-card">
+                    <h2>PIREP History</h2>
+                    <div id="pirep-history-list">
+                        </div>
+                </section>
+            </div>
         </main>
     </div>
 

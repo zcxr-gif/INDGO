@@ -44,31 +44,33 @@
                 </aside>
 
                 <div class="dashboard-content">
-                    <!-- Tabs wrapper: includes both .tabs (for JS) and .tabs-container (for your CSS) -->
                     <div class="tabs tabs-container">
                         <button class="tab-link active" data-tab="tab-profile"><i class="fas fa-user-edit"></i> My Profile</button>
                         <button class="tab-link" data-tab="tab-password"><i class="fas fa-key"></i> Security</button>
+                        <button id="pirep-tab-link" class="tab-link" data-tab="tab-pirep-management" style="display: none;"><i class="fas fa-check-square"></i> PIREP Management</button>
+                        <button id="pilot-management-tab-link" class="tab-link" data-tab="tab-pilot-management" style="display: none;"><i class="fas fa-user-cog"></i> Manage Pilots</button>
                         <button id="community-tab-link" class="tab-link" data-tab="tab-community" style="display: none;"><i class="fas fa-users"></i> Community</button>
                         <button id="admin-tab-link" class="tab-link" data-tab="tab-admin" style="display: none;"><i class="fas fa-user-shield"></i> Admin Tools</button>
-                        <!-- Pilot tab (hidden by default; shown/created for admins by JS) -->
                         <button id="pilot-tab-link" class="tab-link" data-tab="tab-pilots" style="display: none;"><i class="fas fa-database"></i> Pilot Database</button>
-                        <button id="pilot-management-tab-link" class="tab-link" data-tab="tab-pilot-management" style="display: none;">
-        <i class="fas fa-user-cog"></i> Manage Pilots
-    </button>
                     </div>
 
                     <div class="tab-contents">
-    <div id="tab-pilot-management" class="tab-content">
-        <h2>Pilot Roster Management 🧑‍✈️</h2>
-        <p>Promote, demote, or change the rank of pilots in the virtual airline.</p>
-        
-        <div id="pilot-management-container" class="user-list-container-style"> <p>Loading pilot roster...</p>
-        </div>
-    </div>
-</div>
+                        <div id="tab-pirep-management" class="tab-content">
+                            <h2>Pending Flight Reports ✅</h2>
+                            <p>Review the following reports. Approving a PIREP will automatically update the pilot's flight hours and check for rank promotions.</p>
+                            <div id="pending-pireps-container">
+                                <p>Loading pending reports...</p>
+                            </div>
+                        </div>
 
-                    <!-- Tab contents wrapper used by the JS for injecting dynamic tabs -->
-                    <div class="tab-contents">
+                        <div id="tab-pilot-management" class="tab-content">
+                            <h2>Pilot Roster Management 🧑‍✈️</h2>
+                            <p>Promote, demote, or change the rank of pilots in the virtual airline.</p>
+                            <div id="pilot-management-container" class="user-list-container-style">
+                                <p>Loading pilot roster...</p>
+                            </div>
+                        </div>
+
                         <div id="tab-profile" class="tab-content active">
                             <h2>Update Profile Information</h2>
                             <p>Warning: The Bio and the Name will be posted to the staff page once clicked Save Changes, don't share sensitive information.</p>
@@ -177,7 +179,6 @@
                                         </select>
                                     </div>
 
-                                    <!-- NEW: Callsign input for add-member form -->
                                     <div class="form-group">
                                         <label for="new-member-callsign">Callsign (optional)</label>
                                         <input type="text" id="new-member-callsign" name="callsign" placeholder="e.g. INDGO-01">
@@ -268,7 +269,6 @@
                             </div>
                         </div>
 
-                        <!-- NEW: Pilot Database tab content (initially hidden) -->
                         <div id="tab-pilots" class="tab-content" style="display: none;">
                             <h2>Pilot Database</h2>
                             <p>View pilots, ranks, flight hours and manage callsigns.</p>
@@ -276,10 +276,10 @@
                                 <p>Loading pilots...</p>
                             </div>
                         </div>
-                    </div> <!-- /.tab-contents -->
-                </div> <!-- /.dashboard-content -->
-            </div> <!-- /.dashboard-layout -->
-        </div> <!-- /.fade-in -->
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div id="cropper-modal" style="display: none;">
             <div class="cropper-modal-overlay"></div>

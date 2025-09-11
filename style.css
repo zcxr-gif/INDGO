@@ -1207,6 +1207,50 @@ a {
     margin-right: 0.5rem;
 }
 
+.pirep-review-card {
+    background-color: rgba(13, 16, 28, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.pirep-review-card .card-header {
+    background-color: rgba(0,0,0,0.2);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.card-header h4 { margin: 0; font-size: 1.2rem; }
+.card-header .pilot-info { font-size: 0.9rem; opacity: 0.8; margin-top: 0.25rem; }
+
+.pirep-review-card .card-body {
+    padding: 1.5rem;
+}
+.card-body p { margin: 0 0 0.75rem 0; }
+.card-body p:last-child { margin-bottom: 0; }
+
+.pirep-review-card .card-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 0 1.5rem 1.5rem;
+}
+
+.card-actions button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-approve { background-color: #28a745; color: white; }
+.btn-approve:hover { background-color: #218838; }
+
+.btn-reject { background-color: #dc3545; color: white; }
+.btn-reject:hover { background-color: #c82333; }
+
 /* --- Dashboard Admin Panel Enhancements --- */
 
 /* Styling for each user card in the management list */
