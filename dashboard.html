@@ -52,7 +52,20 @@
                         <button id="admin-tab-link" class="tab-link" data-tab="tab-admin" style="display: none;"><i class="fas fa-user-shield"></i> Admin Tools</button>
                         <!-- Pilot tab (hidden by default; shown/created for admins by JS) -->
                         <button id="pilot-tab-link" class="tab-link" data-tab="tab-pilots" style="display: none;"><i class="fas fa-database"></i> Pilot Database</button>
+                        <button id="pilot-management-tab-link" class="tab-link" data-tab="tab-pilot-management" style="display: none;">
+        <i class="fas fa-user-cog"></i> Manage Pilots
+    </button>
                     </div>
+
+                    <div class="tab-contents">
+    <div id="tab-pilot-management" class="tab-content">
+        <h2>Pilot Roster Management 🧑‍✈️</h2>
+        <p>Promote, demote, or change the rank of pilots in the virtual airline.</p>
+        
+        <div id="pilot-management-container" class="user-list-container-style"> <p>Loading pilot roster...</p>
+        </div>
+    </div>
+</div>
 
                     <!-- Tab contents wrapper used by the JS for injecting dynamic tabs -->
                     <div class="tab-contents">

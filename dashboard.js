@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addMemberForm = document.getElementById('add-member-form');
     const adminTabLink = document.getElementById('admin-tab-link');
     const communityTabLink = document.getElementById('community-tab-link');
+    const pilotManagementTabLink = document.getElementById('pilot-management-tab-link');
     const logoutBtn = document.getElementById('logout-btn');
 
     // Profile Card Elements
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabsContainer = document.querySelector('.tabs'); // container for tab links; adjust selector to your markup
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
+    const pilotManagementContainer = document.getElementById('pilot-management-container');
 
     // NEW: Admin Panel Containers
     const userListContainer = document.getElementById('user-list-container');
@@ -65,6 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
             "Flight Instructor (FI)"
         ]
     };
+
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const pilotRanks = [ // NEW
+        'Cadet', 'Second Officer', 'First Officer', 
+        'Senior First Officer', 'Captain', 'Senior Captain'
+    ];
 
     if (!token) {
         window.location.href = 'login.html';
@@ -154,6 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (authorizedRoles.includes(user.role)) {
                 if (communityTabLink) communityTabLink.style.display = 'inline-block';
                 populateCommunityManagement();
+            }
+
+            const pilotManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Head of Training (COT)'];
+            if (pilotManagerRoles.includes(user.role)) {
+                if (pilotManagementTabLink) pilotManagementTabLink.style.display = 'inline-block';
+                populatePilotManagement();
             }
 
             document.querySelector('.fade-in')?.classList.add('visible');
@@ -720,6 +738,72 @@ document.addEventListener('DOMContentLoaded', () => {
             if (container) container.innerHTML = `<p style="color:red;">Could not load pilots: ${error.message}</p>`;
         }
     }
+
+    async function populatePilotManagement() {
+        if (!pilotManagementContainer) return;
+        try {
+            const users = await safeFetch(`${API_BASE_URL}/api/users`);
+            const pilots = users.filter(u => u.role === 'pilot');
+            renderPilotList(pilots);
+        } catch (error) {
+            pilotManagementContainer.innerHTML = `<p style="color:red;">Could not load pilot roster: ${error.message}</p>`;
+        }
+    }
+
+    function renderPilotList(pilots) {
+        if (pilots.length === 0) {
+            pilotManagementContainer.innerHTML = '<p>No pilots found in the roster.</p>';
+            return;
+        }
+
+        const createRankOptions = (currentRank) => {
+            return pilotRanks.map(rank =>
+                `<option value="${rank}" ${rank === currentRank ? 'selected' : ''}>${rank}</option>`
+            ).join('');
+        };
+
+        pilotManagementContainer.innerHTML = pilots.map(pilot => `
+            <div class="user-manage-card" data-userid="${pilot._id}">
+                <div class="user-info">
+                    <strong>${pilot.name}</strong> (${pilot.callsign || 'No Callsign'})
+                    <small>${pilot.email}</small>
+                </div>
+                <div class="user-controls">
+                    <label>
+                        Rank:
+                        <select class="rank-select" data-userid="${pilot._id}">
+                            ${createRankOptions(pilot.rank)}
+                        </select>
+                    </label>
+                </div>
+            </div>
+        `).join('');
+    }
+
+     pilotManagementContainer?.addEventListener('change', async (e) => {
+        if (e.target.classList.contains('rank-select')) {
+            const selectElement = e.target;
+            const userId = selectElement.dataset.userid;
+            const newRank = selectElement.value;
+
+            if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
+                populatePilotManagement(); 
+                return;
+            }
+
+            try {
+                await safeFetch(`${API_BASE_URL}/api/users/${userId}/rank`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newRank })
+                });
+                showNotification('Pilot rank updated successfully!', 'success');
+            } catch (error) {
+                showNotification(`Failed to update rank: ${error.message}`, 'error');
+                populatePilotManagement();
+            }
+        }
+    });
 
     // Delegate clicks in pilot DB (callsign update)
     document.body.addEventListener('click', async (e) => {
