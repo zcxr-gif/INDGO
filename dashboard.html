@@ -4,314 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard - INDGO AIR Virtual</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
     <link rel="icon" href="/images/indgo.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav class="navbar">
-            <a href="index.html" class="nav-logo">
-                <img src="/images/indgo.png" alt="INDGO AIR Virtual Logo" class="logo-image">
-                <span class="logo-text">IndGo AIR VIRTUAL</span>
-            </a>
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                <li class="nav-item"><a href="crew-center.html" class="nav-link nav-button">Crew Center</a></li>
-                <li class="nav-item"><a href="#" id="logout-btn" class="nav-link nav-button">Logout</a></li>
-            </ul>
-             <div class="hamburger-menu">
-                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="/images/indgo.png" alt="Logo" class="logo-image">
+                <span class="logo-text">IndGo Virtual</span>
             </div>
-        </nav>
-    </header>
 
-    <main class="main-container" style="padding-top: 8rem; max-width: 1200px;">
-        <div class="fade-in">
-            <h1 id="welcome-message" style="margin-bottom: 2rem;">Welcome, [Staff Name]!</h1>
-
-            <div class="dashboard-layout">
-                <aside class="dashboard-profile-card">
-                    <div class="profile-card-header">
-                        <img id="profile-card-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-card-img">
-                    </div>
-                    <div class="profile-card-body">
-                        <h3 id="profile-card-name">[User Name]</h3>
-                        <p id="profile-card-role" class="profile-card-role-badge">STAFF</p>
-                        <p id="profile-card-bio" class="profile-card-bio-text">Your bio will appear here once you've set it.</p>
-                    </div>
-                </aside>
-
-                <div class="dashboard-content">
-                    <div class="tabs tabs-container">
-                        <button class="tab-link active" data-tab="tab-profile"><i class="fas fa-user-edit"></i> My Profile</button>
-                        <button class="tab-link" data-tab="tab-password"><i class="fas fa-key"></i> Security</button>
-                        <button id="pirep-tab-link" class="tab-link" data-tab="tab-pirep-management" style="display: none;"><i class="fas fa-check-square"></i> PIREP Management</button>
-                        <button id="roster-tab-link" class="tab-link" data-tab="tab-roster-management" style="display: none;"><i class="fas fa-clipboard-list"></i> Roster Management</button>
-                        <button id="pilot-management-tab-link" class="tab-link" data-tab="tab-pilot-management" style="display: none;"><i class="fas fa-user-cog"></i> Manage Pilots</button>
-                        <button id="community-tab-link" class="tab-link" data-tab="tab-community" style="display: none;"><i class="fas fa-users"></i> Community</button>
-                        <button id="admin-tab-link" class="tab-link" data-tab="tab-admin" style="display: none;"><i class="fas fa-user-shield"></i> Admin Tools</button>
-                        <button id="pilot-tab-link" class="tab-link" data-tab="tab-pilots" style="display: none;"><i class="fas fa-database"></i> Pilot Database</button>
-                    </div>
-
-                    <div class="tab-contents">
-                        <div id="tab-pirep-management" class="tab-content">
-                            <h2>Pending Flight Reports ✅</h2>
-                            <p>Review the following reports. Approving a PIREP will automatically update the pilot's flight hours and check for rank promotions.</p>
-                            <div id="pending-pireps-container">
-                                <p>Loading pending reports...</p>
-                            </div>
-                        </div>
-
-                        <div id="tab-roster-management" class="tab-content">
-                            </div>
-
-                        <div id="tab-pilot-management" class="tab-content">
-                            <h2>Pilot Roster Management 🧑‍✈️</h2>
-                            <p>Promote, demote, or change the rank of pilots in the virtual airline.</p>
-                            <div id="pilot-management-container" class="user-list-container-style">
-                                <p>Loading pilot roster...</p>
-                            </div>
-                        </div>
-
-                        <div id="tab-profile" class="tab-content active">
-                            <h2>Update Profile Information</h2>
-                            <p>Warning: The Bio and the Name will be posted to the staff page once clicked Save Changes, don't share sensitive information.</p>
-                            <form id="profile-form" class="dashboard-form">
-                                <div class="form-group">
-                                    <label for="profile-name">Full Name</label>
-                                    <input type="text" id="profile-name" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="profile-bio">About Me (Bio)</label>
-                                    <textarea id="profile-bio" rows="4"></textarea>
-                                </div>
-                                <hr style="margin: 2rem 0;">
-                                <div class="form-group">
-                                    <label for="profile-discord">Discord Username</label>
-                                    <input type="text" id="profile-discord" placeholder="e.g., username#0000">
-                                </div>
-                                <div class="form-group">
-                                    <label for="profile-ifc">Infinite Flight Community Profile URL</label>
-                                    <input type="url" id="profile-ifc" placeholder="e.g., https://community.infiniteflight.com/u/username">
-                                </div>
-                                <div class="form-group">
-                                    <label for="profile-youtube">YouTube Channel URL</label>
-                                    <input type="url" id="profile-youtube" placeholder="e.g., https://www.youtube.com/channel/yourchannel">
-                                </div>
-                                <div class="form-group">
-                                    <label for="profile-preferred">Preferred Contact Method</label>
-                                    <select id="profile-preferred">
-                                        <option value="none">None</option>
-                                        <option value="discord">Discord</option>
-                                        <option value="ifc">IFC</option>
-                                        <option value="youtube">YouTube</option>
-                                    </select>
-                                </div>
-                                <hr style="margin: 2rem 0;">
-                                <div class="form-group">
-                                    <label for="profile-picture">Update Profile Picture</label>
-                                    <input type="file" id="profile-picture" accept="image/*">
-                                </div>
-                                <button type="submit" class="cta-button">Save Changes</button>
-                            </form>
-                        </div>
-
-                        <div id="tab-password" class="tab-content">
-                            <h2>Change Password</h2>
-                            <p>For your security, choose a strong, unique password.</p>
-                            <form id="password-form" class="dashboard-form">
-                                <div class="form-group">
-                                    <label for="current-password">Current Password</label>
-                                    <input type="password" id="current-password" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-password">New Password</label>
-                                    <input type="password" id="new-password" required>
-                                </div>
-                                 <div class="form-group">
-                                    <label for="confirm-password">Confirm New Password</label>
-                                    <input type="password" id="confirm-password" required>
-                                </div>
-                                <button type="submit" class="cta-button">Update Password</button>
-                            </form>
-                        </div>
-
-                        <div id="tab-admin" class="tab-content">
-                            <h2>Administrator Tools</h2>
-                            <p>Manage team members and site settings.</p>
-
-                            <div id="live-ops-panel">
-                                <h3>Live Operations</h3>
-                                <div id="live-ops-container" class="user-list-container-style" style="margin-bottom: 2rem;">
-                                    <p>Loading live operations status...</p>
-                                </div>
-                            </div>
-                            <hr style="margin: 2rem 0;">
-                            <div id="manage-users-panel">
-                                <h3>Manage Team Members</h3>
-                                <div id="user-list-container">
-                                    <p>Loading users...</p>
-                                </div>
-                            </div>
-
-                            <hr style="margin: 2rem 0;">
-
-                            <div id="admin-panel">
-                                <h3>Add New Team Member</h3>
-                                <form id="add-member-form" class="dashboard-form">
-                                    <div class="form-group">
-                                        <label for="new-member-email">Email Address</label>
-                                        <input type="email" id="new-member-email" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="new-member-password">Initial Password</label>
-                                        <input type="password" id="new-member-password" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="new-member-role">Assign Role</label>
-                                        <select id="new-member-role" required>
-                                            <optgroup label="General Roles">
-                                                <option value="staff">Staff</option>
-                                                <option value="pilot">Pilot</option>
-                                                <option value="admin">Admin (Site Control)</option>
-                                            </optgroup>
-                                            <optgroup label="Leadership & Management">
-                                                <option value="Chief Executive Officer (CEO)">Chief Executive Officer (CEO)</option>
-                                                <option value="Chief Operating Officer (COO)">Chief Operating Officer (COO)</option>
-                                                <option value="PIREP Manager (PM)">PIREP Manager (PM)</option>
-                                                <option value="Pilot Relations & Recruitment Manager (PR)">Pilot Relations & Recruitment Manager (PR)</option>
-                                                <option value="Technology & Design Manager (TDM)">Technology & Design Manager (TDM)</option>
-                                                <option value="Head of Training (COT)">Head of Training (COT)</option>
-                                                <option value="Chief Marketing Officer (CMO)">Chief Marketing Officer (CMO)</option>
-                                                <option value="Route Manager (RM)">Route Manager (RM)</option>
-                                                <option value="Events Manager (EM)">Events Manager (EM)</option>
-                                            </optgroup>
-                                            <optgroup label="Flight Operations">
-                                                <option value="Flight Instructor (FI)">Flight Instructor (FI)</option>
-                                            </optgroup>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="new-member-callsign">Callsign (optional)</label>
-                                        <input type="text" id="new-member-callsign" name="callsign" placeholder="e.g. INDGO-01">
-                                    </div>
-
-                                    <button type="submit" class="cta-button">Create Member</button>
-                                </form>
-                            </div>
-
-                            <hr style="margin: 2rem 0;">
-
-                            <div id="view-logs-panel">
-                                <h3>Admin Activity Log</h3>
-                                <div id="log-container">
-                                    <p>Loading logs...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="tab-community" class="tab-content">
-                            <h2>Community Content Management</h2>
-                            <p>Create and manage events and weekly highlights for the community page.</p>
-
-                            <div id="create-event-panel">
-                                <h3>Post a New Event</h3>
-                                <form id="create-event-form" class="dashboard-form">
-                                    <div class="form-group">
-                                        <label for="event-title">Event Title</label>
-                                        <input type="text" id="event-title" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="event-date">Event Date & Time</label>
-                                        <input type="datetime-local" id="event-date" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="event-description">Description</label>
-                                        <textarea id="event-description" rows="4" required></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="event-image">Event Image</label>
-                                        <input type="file" id="event-image" accept="image/*">
-                                    </div>
-                                    <button type="submit" class="cta-button">Post Event</button>
-                                </form>
-                            </div>
-
-                            <hr style="margin: 2rem 0;">
-
-                            <div id="create-highlight-panel">
-                                <h3>Post a Weekly Highlight</h3>
-                                <form id="create-highlight-form" class="dashboard-form">
-                                    <div class="form-group">
-                                        <label for="highlight-title">Highlight Title (e.g., Best Picture of the Week)</label>
-                                        <input type="text" id="highlight-title" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="highlight-winner">Winner / Pilot Name</label>
-                                        <input type="text" id="highlight-winner" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="highlight-description">Brief Description</label>
-                                        <textarea id="highlight-description" rows="3"></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="highlight-image">Winning Picture/Screenshot</label>
-                                        <input type="file" id="highlight-image" accept="image/*" required>
-                                    </div>
-                                    <button type="submit" class="cta-button">Post Highlight</button>
-                                </form>
-                            </div>
-
-                            <hr style="margin: 2rem 0;">
-
-                            <div id="manage-events-panel">
-                                <h3>Manage Existing Events</h3>
-                                <div id="manage-events-container">
-                                    <p>Loading events...</p>
-                                </div>
-                            </div>
-
-                            <hr style="margin: 2rem 0;">
-
-                            <div id="manage-highlights-panel">
-                                <h3>Manage Existing Highlights</h3>
-                                <div id="manage-highlights-container">
-                                    <p>Loading highlights...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="tab-pilots" class="tab-content" style="display: none;">
-                            <h2>Pilot Database</h2>
-                            <p>View pilots, ranks, flight hours and manage callsigns.</p>
-                            <div id="pilot-db-container">
-                                <p>Loading pilots...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="sidebar-profile">
+                <img id="sidebar-profile-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
+                <h3 id="sidebar-user-name">[Staff Name]</h3>
+                <p id="sidebar-user-role" class="user-role">STAFF</p>
             </div>
-        </div>
-        
-        <div id="cropper-modal" style="display: none;">
-            <div class="cropper-modal-overlay"></div>
-            <div class="cropper-modal-content">
-                <h2>Adjust Your Profile Picture</h2>
-                <div class="cropper-container">
-                    <img id="image-to-crop" src="">
-                </div>
-                <div class="cropper-modal-actions">
-                    <button id="cancel-crop-btn" class="cta-button" style="background-color: #555;">Cancel</button>
-                    <button id="crop-and-save-btn" class="cta-button">Crop & Save</button>
-                </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-tab="tab-profile"><i class="fas fa-user-edit"></i> My Profile</a></li>
+                    <li><a href="#" class="nav-link" data-tab="tab-password"><i class="fas fa-key"></i> Security</a></li>
+                    <li id="pirep-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-pirep-management"><i class="fas fa-check-square"></i> PIREP Management</a></li>
+                    <li id="roster-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-roster-management"><i class="fas fa-clipboard-list"></i> Roster Management</a></li>
+                    <li id="pilot-management-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-pilot-management"><i class="fas fa-user-cog"></i> Manage Pilots</a></li>
+                    <li id="community-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-community"><i class="fas fa-users"></i> Community</a></li>
+                    <li id="admin-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-admin"><i class="fas fa-user-shield"></i> Admin Tools</a></li>
+                    <li id="pilot-db-nav-link" style="display: none;"><a href="#" class="nav-link" data-tab="tab-pilots"><i class="fas fa-database"></i> Pilot Database</a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="#" id="logout-btn" class="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
-        </div>
-    </main>
+        </aside>
+
+        <main class="main-content">
+            <h1 id="welcome-message">Welcome, [Staff Name]!</h1>
+            <p>Select an option from the sidebar to manage airline operations.</p>
+            
+            <div id="tab-profile" class="content-card active">
+                <h2><i class="fas fa-user-edit"></i> Update Profile Information</h2>
+                <p>Your name and bio will be visible on the public staff page. Please do not share sensitive information.</p>
+                <form id="profile-form">
+                    </form>
+            </div>
+
+            <div id="tab-password" class="content-card">
+                <h2><i class="fas fa-key"></i> Change Password</h2>
+                <p>For your security, choose a strong, unique password.</p>
+                <form id="password-form">
+                    </form>
+            </div>
+
+            <div id="tab-pirep-management" class="content-card">
+                <h2><i class="fas fa-check-square"></i> Pending Flight Reports</h2>
+                <p>Review the following reports. Approving a PIREP will automatically update pilot flight hours and check for promotions.</p>
+                <div id="pending-pireps-container"><p>Loading pending reports...</p></div>
+            </div>
+
+            <div id="tab-roster-management" class="content-card">
+                </div>
+
+            <div id="tab-pilot-management" class="content-card">
+                <h2><i class="fas fa-user-cog"></i> Pilot Roster Management</h2>
+                <p>Promote, demote, or change the rank of pilots in the virtual airline.</p>
+                <div id="pilot-management-container"><p>Loading pilot roster...</p></div>
+            </div>
+
+            <div id="tab-admin" class="content-card">
+                 <h2><i class="fas fa-user-shield"></i> Administrator Tools</h2>
+                 <p>Manage team members and site settings.</p>
+                 </div>
+            
+            <div id="tab-community" class="content-card">
+                <h2><i class="fas fa-users"></i> Community Content</h2>
+                <p>Create and manage events and weekly highlights for the community page.</p>
+                </div>
+
+            <div id="tab-pilots" class="content-card">
+                <h2><i class="fas fa-database"></i> Pilot Database</h2>
+                <p>View pilots, ranks, flight hours and manage callsigns.</p>
+                <div id="pilot-db-container"><p>Loading pilots...</p></div>
+            </div>
+
+        </main>
+    </div>
     
+    <div id="cropper-modal" style="display: none;">
+        </div>
+
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     <script src="dashboard.js" defer></script>

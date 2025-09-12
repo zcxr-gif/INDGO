@@ -6,41 +6,72 @@
     <title>Crew Center</title>
     <link rel="stylesheet" href="crew-center.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="page-container">
-        <header class="dashboard-header">
-            <h1>Crew Center</h1>
-            <div class="header-nav">
-                <a href="index.html" class="nav-button">Home</a>
-                <a href="dashboard.html" class="nav-button">Staff Dashboard</a>
-                <button id="logout-button">Logout</button>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="/images/indgo.png" alt="Logo" class="logo-image">
+                <span class="logo-text">Crew Center</span>
             </div>
-        </header>
-        
-        <main class="crew-center-layout">
-            <aside class="pilot-profile-card">
-                <div class="profile-header">
-                    <img id="profile-picture" src="default-pfp.png" alt="Profile Picture" class="pfp">
-                </div>
-                <div class="profile-body">
-                    <h2 id="pilot-name">Loading...</h2>
-                    <p class="pilot-callsign" id="pilot-callsign">Loading...</p>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <strong>Rank</strong>
-                            <span id="pilot-rank">Loading...</span>
-                        </div>
-                        <div class="stat-item">
-                            <strong>Flight Hours</strong>
-                            <span id="flight-hours">Loading...</span>
-                        </div>
+            
+            <div class="sidebar-profile">
+                <img id="profile-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
+                <h3 id="pilot-name">Loading...</h3>
+                <p id="pilot-callsign" class="user-role">Loading...</p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <strong>Rank</strong>
+                        <span id="pilot-rank">---</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Flight Hours</strong>
+                        <span id="flight-hours">---</span>
                     </div>
                 </div>
-            </aside>
+            </div>
 
-            <div class="pilot-actions-container">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-view="view-duty-status"><i class="fa-solid fa-plane-departure"></i> Duty Status</a></li>
+                    <li><a href="#" class="nav-link" data-view="view-file-pirep"><i class="fa-solid fa-file-signature"></i> File PIREP</a></li>
+                    <li><a href="#" class="nav-link" data-view="view-rosters"><i class="fa-solid fa-map-location-dot"></i> Sector Ops</a></li>
+                    <li><a href="#" class="nav-link" data-view="view-history"><i class="fa-solid fa-clock-rotate-left"></i> Flight Log</a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                 <a href="dashboard.html" class="dashboard-link"><i class="fas fa-tachometer-alt"></i> Staff Dashboard</a>
+                 <a href="#" id="logout-button" class="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="view-duty-status" class="content-view active">
                 </div>
+
+            <div id="view-file-pirep" class="content-view">
+                 </div>
+
+            <div id="view-rosters" class="content-view">
+                <div class="content-card">
+                    <h2><i class="fa-solid fa-map-location-dot"></i> Sector Ops - Available Rosters</h2>
+                    <p>Select a roster to begin your duty day. Rosters are generated based on your last known location.</p>
+                    <div id="roster-list-container">
+                        <p>Loading available rosters...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="view-history" class="content-view">
+                <div class="content-card">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> PIREP History</h2>
+                    <div id="pirep-history-list">
+                        <p>Loading your flight history...</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
