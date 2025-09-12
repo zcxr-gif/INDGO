@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const communityTabLink = document.getElementById('community-tab-link');
     const pilotManagementTabLink = document.getElementById('pilot-management-tab-link');
     const pirepTabLink = document.getElementById('pirep-tab-link');
-    const rosterTabLink = document.getElementById('roster-tab-link'); // **NEW**
+    const rosterTabLink = document.getElementById('roster-tab-link');
 
     // --- PROFILE CARD ELEMENTS ---
     const profileCardPicture = document.getElementById('profile-card-picture');
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageEventsContainer = document.getElementById('manage-events-container');
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
     const pendingPirepsContainer = document.getElementById('pending-pireps-container');
-    const rosterManagementContainer = document.getElementById('tab-roster-management'); // **NEW**
+    const rosterManagementContainer = document.getElementById('tab-roster-management');
     let pilotTabLink = document.getElementById('pilot-tab-link');
     let pilotTabContent = document.getElementById('tab-pilots');
     
@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
             options.headers.Authorization = `Bearer ${token}`;
         }
         
-        // Don't set Content-Type for FormData, browser does it with boundary
         if (!(options.body instanceof FormData) && !options.headers['Content-Type']) {
             options.headers['Content-Type'] = 'application/json';
         }
@@ -76,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contentType && contentType.includes("application/json")) {
             data = await res.json();
         } else {
-            // Handle non-JSON responses gracefully
             const text = await res.text();
             data = { message: text }; 
         }
@@ -154,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadPendingPireps();
             }
 
-            // **NEW**: Show Roster Management tab for authorized roles
             const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
             if (routeManagerRoles.includes(user.role)) {
                 if (rosterTabLink) rosterTabLink.style.display = 'inline-block';
@@ -221,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification(result.message, 'success');
                 document.getElementById(`pirep-${pirepId}`).remove();
                 if (pendingPirepsContainer.children.length === 0) {
-                    renderPireps([]); // Show the "no pending" message
+                    renderPireps([]); 
                 }
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
@@ -247,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification(result.message, 'success');
                 document.getElementById(`pirep-${pirepId}`).remove();
                 if (pendingPirepsContainer.children.length === 0) {
-                    renderPireps([]); // Show the "no pending" message
+                    renderPireps([]); 
                 }
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
@@ -257,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ROSTER MANAGEMENT (NEW SECTION) ---
+    // --- ROSTER MANAGEMENT (UPDATED) ---
     function populateRosterManagement() {
         if (!rosterManagementContainer) return;
         
@@ -265,8 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <h2>Roster Management ✈️</h2>
             <p>Create and manage daily rosters for the Sector Ops system.</p>
             
+            <div id="roster-automation-panel" style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem; background-color: #f9f9f9;">
+                <h3>Automated Roster Generation</h3>
+                <p>Automatically generate a new set of daily rosters from the master Google Sheet. This will delete all previously auto-generated rosters.</p>
+                <button id="generate-rosters-btn" class="cta-button">Generate Rosters from Sheet</button>
+            </div>
+            
             <div id="create-roster-panel">
-                <h3>Create New Roster</h3>
+                <h3>Create New Roster (Manual)</h3>
                 <form id="create-roster-form" class="dashboard-form">
                     <div class="form-group"><label for="roster-name">Roster Name</label><input type="text" id="roster-name" required></div>
                     <div class="form-group"><label for="roster-hub">Hub ICAO</label><input type="text" id="roster-hub" required maxlength="4"></div>
@@ -313,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     flightNumber: inputs[0].value.toUpperCase(),
                     departure: inputs[1].value.toUpperCase(),
                     arrival: inputs[2].value.toUpperCase(),
+                    flightTime: 0 // Note: Backend doesn't use leg flightTime for manual creation yet, but good to have
                 };
             });
 
@@ -347,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = rosters.map(roster => `
                 <div class="user-manage-card">
                     <div class="user-info">
-                        <strong>${roster.name}</strong> (${roster.hub})
+                        <strong>${roster.name} ${roster.isGenerated ? ' <small>(Auto)</small>' : ''}</strong> (${roster.hub})
                         <small>${roster.legs.length} legs, ${roster.totalFlightTime.toFixed(1)} hrs</small>
                     </div>
                     <div class="user-controls">
@@ -362,6 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     rosterManagementContainer?.addEventListener('click', async e => {
         const deleteButton = e.target.closest('.delete-roster-btn');
+        const generateButton = e.target.closest('#generate-rosters-btn');
+
         if (deleteButton) {
             const rosterId = deleteButton.dataset.id;
             const rosterName = deleteButton.dataset.name;
@@ -375,9 +381,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        if (generateButton) {
+            if (!confirm('Are you sure? This will replace all existing auto-generated rosters.')) return;
+            
+            generateButton.disabled = true;
+            generateButton.textContent = 'Generating...';
+            try {
+                const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
+                showNotification(result.message, 'success');
+                loadAndRenderRosters(); 
+            } catch (error) {
+                showNotification(`Generation failed: ${error.message}`, 'error');
+            } finally {
+                generateButton.disabled = false;
+                generateButton.textContent = 'Generate Rosters from Sheet';
+            }
+        }
     });
 
-    // --- TAB SWITCHING LOGIC (UPDATED) ---
+    // --- TAB SWITCHING LOGIC ---
     function attachTabListeners() {
         const tabLinks = document.querySelectorAll('.tab-link');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -390,22 +413,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const target = document.getElementById(tab.dataset.tab);
                 if (target) target.classList.add('active');
 
-                // Reload data when certain tabs are clicked
                 const tabId = tab.dataset.tab;
                 if (tabId === 'tab-pilots') populatePilotDatabase();
                 if (tabId === 'tab-admin') populateAdminTools();
                 if (tabId === 'tab-pirep-management') loadPendingPireps();
-                if (tabId === 'tab-roster-management') loadAndRenderRosters(); // **NEW**
+                if (tabId === 'tab-roster-management') loadAndRenderRosters();
             });
         });
     }
 
-    // --- ADMIN: POPULATE USERS & LOGS (UPDATED) ---
+    // --- ADMIN: POPULATE USERS & LOGS ---
     async function populateAdminTools() {
         try {
             const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
             renderUserList(users);
-            renderLiveOperations(users); // **NEW**
+            renderLiveOperations(users); 
 
             const logs = await safeFetch(`${API_BASE_URL}/api/logs`, { method: 'GET' });
             renderLogList(logs);
@@ -442,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="user-info">
                         <strong>${user.name}</strong>
                         <small>${user.email}</small>
-                        <div><small>Rank: ${user.rank || '—'} • Hours: ${user.flightHours ?? 0}</small></div>
+                        <div><small>Rank: ${user.rank || '—'} • Hours: ${user.flightHours?.toFixed(1) ?? 0}</small></div>
                     </div>
                     <div class="user-controls">
                         <label style="display:block;font-size:0.8rem;margin-bottom:6px;">
@@ -485,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logContainer.innerHTML = logEntries;
     }
 
-    // --- RENDER LIVE OPERATIONS (NEW) ---
+    // --- RENDER LIVE OPERATIONS ---
     function renderLiveOperations(users) {
         const container = document.getElementById('live-ops-container');
         if (!container) return;
@@ -497,13 +519,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Fetch rosters to map roster IDs to names
         safeFetch(`${API_BASE_URL}/api/rosters`).then(rosters => {
             const rosterMap = new Map(rosters.map(r => [r._id, r.name]));
             container.innerHTML = onDutyPilots.map(pilot => `
-                <div class="live-ops-item">
+                <div class="live-ops-item" style="padding: 0.5rem; border-bottom: 1px solid #eee;">
                     <strong>${pilot.name} (${pilot.callsign || 'N/A'})</strong> is ON DUTY.
-                    <small>Roster: ${rosterMap.get(pilot.currentRoster) || 'N/A'}</small>
+                    <small style="display: block; color: #555;">Roster: ${rosterMap.get(pilot.currentRoster) || 'N/A'}</small>
                 </div>
             `).join('');
         }).catch(err => {
@@ -511,6 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ... (The rest of the file remains the same) ...
 
     // --- COMMUNITY: EVENTS & HIGHLIGHTS ---
     async function populateCommunityManagement() {
@@ -589,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="pilot-row" data-userid="${p._id}">
                     <div class="pilot-info">
                         <strong>${p.name}</strong> <small>(${p.email})</small><br/>
-                        <small>Rank: ${p.rank || '—'} • Hours: ${p.flightHours ?? 0}</small>
+                        <small>Rank: ${p.rank || '—'} • Hours: ${p.flightHours?.toFixed(1) ?? 0}</small>
                     </div>
                     <div class="pilot-controls">
                         <label>Callsign:
@@ -661,24 +683,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     aspectRatio: 1 / 1,
                     viewMode: 1,
                     background: false,
-                    responsive: true,
-                    restore: true,
-                    checkCrossOrigin: true,
-                    checkOrientation: true,
-                    modal: true,
-                    guides: true,
-                    highlight: true,
-                    autoCrop: true,
-                    autoCropArea: 0.9,
-                    movable: true,
-                    rotatable: true,
-                    scalable: true,
-                    zoomable: true,
-                    zoomOnTouch: true,
-                    zoomOnWheel: true,
-                    cropBoxMovable: false,
-                    cropBoxResizable: false,
-                    toggleDragModeOnDblclick: false,
                 });
             };
             reader.readAsDataURL(files[0]);
@@ -721,7 +725,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Note: safeFetch handles FormData content type automatically
             const result = await safeFetch(`${API_BASE_URL}/api/me`, {
                 method: 'PUT',
                 body: formData
