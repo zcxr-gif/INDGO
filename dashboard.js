@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelCropBtn = document.getElementById('cancel-crop-btn');
     const pictureInput = document.getElementById('profile-picture');
     let cropper;
-    let croppedImageBlob = null; // This will hold the cropped image file
+    let croppedImageBlob = null;
 
     // --- PAGE ELEMENTS ---
     const welcomeMessage = document.getElementById('welcome-message');
@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pilotManagementTabLink = document.getElementById('pilot-management-tab-link');
     const pirepTabLink = document.getElementById('pirep-tab-link');
     const rosterTabLink = document.getElementById('roster-tab-link');
+    const pilotTabLink = document.getElementById('pilot-tab-link');
 
     // --- PROFILE CARD ELEMENTS ---
     const profileCardPicture = document.getElementById('profile-card-picture');
@@ -31,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileCardBio = document.getElementById('profile-card-bio');
 
     // --- CONTAINERS & DYNAMIC ELEMENTS ---
-    const tabsContainer = document.querySelector('.tabs');
     const pilotManagementContainer = document.getElementById('pilot-management-container');
     const userListContainer = document.getElementById('user-list-container');
     const logContainer = document.getElementById('log-container');
@@ -39,8 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
     const pendingPirepsContainer = document.getElementById('pending-pireps-container');
     const rosterManagementContainer = document.getElementById('tab-roster-management');
-    let pilotTabLink = document.getElementById('pilot-tab-link');
-    let pilotTabContent = document.getElementById('tab-pilots');
     
     // --- APP STATE & CONFIG ---
     const token = localStorage.getItem('authToken');
@@ -51,13 +49,23 @@ document.addEventListener('DOMContentLoaded', () => {
         "Flight Operations": ["Flight Instructor (FI)"]
     };
     const pilotRanks = ['Cadet', 'Second Officer', 'First Officer', 'Senior First Officer', 'Captain', 'Senior Captain'];
+    
+    // --- DATA LOADING FLAGS ---
+    let dataLoaded = {
+        admin: false,
+        pireps: false,
+        rosters: false,
+        community: false,
+        pilotManagement: false,
+        pilotDb: false,
+    };
 
     if (!token) {
         window.location.href = 'login.html';
         return;
     }
 
-    // --- SAFE FETCH WRAPPER (UPDATED) ---
+    // --- SAFE FETCH WRAPPER ---
     async function safeFetch(url, options = {}) {
         options.headers = options.headers || {};
         if (!options.headers.Authorization && token) {
@@ -106,59 +114,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }).showToast();
     }
 
-    // --- FETCH USER DATA & SETUP UI (UPDATED)---
+    // --- FETCH USER DATA & SETUP UI ---
     async function fetchUserData() {
         try {
             const user = await safeFetch(`${API_BASE_URL}/api/me`);
             currentUserId = user._id;
 
-            welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
-            profileCardName.textContent = user.name;
-            profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
-            profileCardRole.textContent = user.role ? user.role.toUpperCase() : 'USER';
-            profileCardPicture.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
+            if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
+            if (profileCardName) profileCardName.textContent = user.name;
+            if (profileCardBio) profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
+            if (profileCardRole) profileCardRole.textContent = user.role ? user.role.toUpperCase() : 'USER';
+            if (profileCardPicture) profileCardPicture.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
 
             // Populate form fields
-            if (document.getElementById('profile-name')) document.getElementById('profile-name').value = user.name;
-            if (document.getElementById('profile-bio')) document.getElementById('profile-bio').value = user.bio || '';
-            if (document.getElementById('profile-discord')) document.getElementById('profile-discord').value = user.discord || '';
-            if (document.getElementById('profile-ifc')) document.getElementById('profile-ifc').value = user.ifc || '';
-            if (document.getElementById('profile-youtube')) document.getElementById('profile-youtube').value = user.youtube || '';
-            if (document.getElementById('profile-preferred')) document.getElementById('profile-preferred').value = user.preferredContact || 'none';
+            const profileNameEl = document.getElementById('profile-name');
+            if (profileNameEl) profileNameEl.value = user.name;
+            const profileBioEl = document.getElementById('profile-bio');
+            if (profileBioEl) profileBioEl.value = user.bio || '';
+            const profileDiscordEl = document.getElementById('profile-discord');
+            if (profileDiscordEl) profileDiscordEl.value = user.discord || '';
+            const profileIfcEl = document.getElementById('profile-ifc');
+            if (profileIfcEl) profileIfcEl.value = user.ifc || '';
+            const profileYoutubeEl = document.getElementById('profile-youtube');
+            if (profileYoutubeEl) profileYoutubeEl.value = user.youtube || '';
+            const profilePreferredEl = document.getElementById('profile-preferred');
+            if (profilePreferredEl) profilePreferredEl.value = user.preferredContact || 'none';
 
             // --- ROLE-BASED TAB VISIBILITY ---
             if (user.role === 'admin') {
                 if (adminTabLink) adminTabLink.style.display = 'inline-block';
-                populateAdminTools();
-                ensurePilotTab();
-                populatePilotDatabase();
+                if (pilotTabLink) pilotTabLink.style.display = 'inline-block';
             }
 
             const communityRoles = ['Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'admin', 'Chief Marketing Officer (CMO)', 'Events Manager (EM)'];
             if (communityRoles.includes(user.role)) {
                 if (communityTabLink) communityTabLink.style.display = 'inline-block';
-                populateCommunityManagement();
             }
 
             const pilotManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Head of Training (COT)'];
             if (pilotManagerRoles.includes(user.role)) {
                 if (pilotManagementTabLink) pilotManagementTabLink.style.display = 'inline-block';
-                populatePilotManagement();
             }
             
             const pirepManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'PIREP Manager (PM)'];
             if (pirepManagerRoles.includes(user.role)) {
                 if (pirepTabLink) pirepTabLink.style.display = 'inline-block';
-                loadPendingPireps();
             }
 
             const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
             if (routeManagerRoles.includes(user.role)) {
                 if (rosterTabLink) rosterTabLink.style.display = 'inline-block';
-                populateRosterManagement();
             }
 
-            document.querySelector('.fade-in')?.classList.add('visible');
+            const fadeInEl = document.querySelector('.fade-in');
+            if (fadeInEl) fadeInEl.classList.add('visible');
+            
         } catch (error) {
             console.error('Error fetching user data:', error);
             localStorage.removeItem('authToken');
@@ -206,55 +216,59 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    pendingPirepsContainer?.addEventListener('click', async (e) => {
-        const pirepId = e.target.dataset.id;
-        if (!pirepId) return;
+    if (pendingPirepsContainer) {
+        pendingPirepsContainer.addEventListener('click', async (e) => {
+            const pirepId = e.target.dataset.id;
+            if (!pirepId) return;
 
-        if (e.target.classList.contains('btn-approve')) {
-            e.target.disabled = true;
-            e.target.textContent = 'Approving...';
-            try {
-                const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/approve`, { method: 'PUT' });
-                showNotification(result.message, 'success');
-                document.getElementById(`pirep-${pirepId}`).remove();
-                if (pendingPirepsContainer.children.length === 0) {
-                    renderPireps([]); 
+            if (e.target.classList.contains('btn-approve')) {
+                e.target.disabled = true;
+                e.target.textContent = 'Approving...';
+                try {
+                    const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/approve`, { method: 'PUT' });
+                    showNotification(result.message, 'success');
+                    const pirepCard = document.getElementById(`pirep-${pirepId}`);
+                    if(pirepCard) pirepCard.remove();
+                    if (pendingPirepsContainer.children.length === 0) {
+                        renderPireps([]); 
+                    }
+                } catch (error) {
+                    showNotification(`Error: ${error.message}`, 'error');
+                    e.target.disabled = false;
+                    e.target.textContent = 'Approve';
                 }
-            } catch (error) {
-                showNotification(`Error: ${error.message}`, 'error');
-                e.target.disabled = false;
-                e.target.textContent = 'Approve';
             }
-        }
 
-        if (e.target.classList.contains('btn-reject')) {
-            const reason = prompt('Please provide a reason for rejecting this PIREP:');
-            if (!reason || reason.trim() === '') {
-                showNotification('Rejection cancelled. A reason is required.', 'info');
-                return;
-            }
-            e.target.disabled = true;
-            e.target.textContent = 'Rejecting...';
-            try {
-                const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/reject`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reason })
-                });
-                showNotification(result.message, 'success');
-                document.getElementById(`pirep-${pirepId}`).remove();
-                if (pendingPirepsContainer.children.length === 0) {
-                    renderPireps([]); 
+            if (e.target.classList.contains('btn-reject')) {
+                const reason = prompt('Please provide a reason for rejecting this PIREP:');
+                if (!reason || reason.trim() === '') {
+                    showNotification('Rejection cancelled. A reason is required.', 'info');
+                    return;
                 }
-            } catch (error) {
-                showNotification(`Error: ${error.message}`, 'error');
-                e.target.disabled = false;
-                e.target.textContent = 'Reject';
+                e.target.disabled = true;
+                e.target.textContent = 'Rejecting...';
+                try {
+                    const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/reject`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason })
+                    });
+                    showNotification(result.message, 'success');
+                    const pirepCard = document.getElementById(`pirep-${pirepId}`);
+                    if(pirepCard) pirepCard.remove();
+                    if (pendingPirepsContainer.children.length === 0) {
+                        renderPireps([]); 
+                    }
+                } catch (error) {
+                    showNotification(`Error: ${error.message}`, 'error');
+                    e.target.disabled = false;
+                    e.target.textContent = 'Reject';
+                }
             }
-        }
-    });
+        });
+    }
 
-    // --- ROSTER MANAGEMENT (UPDATED) ---
+    // --- ROSTER MANAGEMENT ---
     function populateRosterManagement() {
         if (!rosterManagementContainer) return;
         
@@ -291,52 +305,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div id="manage-rosters-container"><p>Loading rosters...</p></div>
             </div>
         `;
-
+        
         loadAndRenderRosters();
 
-        document.getElementById('add-leg-btn').addEventListener('click', () => {
-            const legContainer = document.getElementById('roster-legs-container');
-            const newLeg = document.createElement('div');
-            newLeg.className = 'roster-leg-input';
-            newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn">&times;</button>`;
-            legContainer.appendChild(newLeg);
-        });
-
-        document.getElementById('roster-legs-container').addEventListener('click', e => {
-            if (e.target.classList.contains('remove-leg-btn')) {
-                e.target.parentElement.remove();
-            }
-        });
-
-        document.getElementById('create-roster-form').addEventListener('submit', async e => {
-            e.preventDefault();
-            const legs = Array.from(document.querySelectorAll('.roster-leg-input')).map(legDiv => {
-                const inputs = legDiv.querySelectorAll('input');
-                return {
-                    flightNumber: inputs[0].value.toUpperCase(),
-                    departure: inputs[1].value.toUpperCase(),
-                    arrival: inputs[2].value.toUpperCase(),
-                    flightTime: 0 // Note: Backend doesn't use leg flightTime for manual creation yet, but good to have
-                };
+        const addLegBtn = document.getElementById('add-leg-btn');
+        if(addLegBtn) {
+            addLegBtn.addEventListener('click', () => {
+                const legContainer = document.getElementById('roster-legs-container');
+                const newLeg = document.createElement('div');
+                newLeg.className = 'roster-leg-input';
+                newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn">&times;</button>`;
+                if(legContainer) legContainer.appendChild(newLeg);
             });
+        }
+        
+        const legsContainer = document.getElementById('roster-legs-container');
+        if(legsContainer) {
+            legsContainer.addEventListener('click', e => {
+                if (e.target.classList.contains('remove-leg-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+        }
 
-            const rosterData = {
-                name: document.getElementById('roster-name').value,
-                hub: document.getElementById('roster-hub').value.toUpperCase(),
-                totalFlightTime: parseFloat(document.getElementById('roster-time').value),
-                legs: legs,
-            };
+        const createRosterForm = document.getElementById('create-roster-form');
+        if(createRosterForm) {
+            createRosterForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const legs = Array.from(document.querySelectorAll('.roster-leg-input')).map(legDiv => {
+                    const inputs = legDiv.querySelectorAll('input');
+                    return {
+                        flightNumber: inputs[0].value.toUpperCase(),
+                        departure: inputs[1].value.toUpperCase(),
+                        arrival: inputs[2].value.toUpperCase(),
+                    };
+                });
 
-            try {
-                await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
-                showNotification('Roster created successfully!', 'success');
-                e.target.reset();
-                document.getElementById('roster-legs-container').innerHTML = `<div class="roster-leg-input"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
-                loadAndRenderRosters();
-            } catch (error) {
-                showNotification(`Error creating roster: ${error.message}`, 'error');
-            }
-        });
+                const rosterData = {
+                    name: document.getElementById('roster-name').value,
+                    hub: document.getElementById('roster-hub').value.toUpperCase(),
+                    totalFlightTime: parseFloat(document.getElementById('roster-time').value),
+                    legs: legs,
+                };
+
+                try {
+                    await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
+                    showNotification('Roster created successfully!', 'success');
+                    e.target.reset();
+                    if(legsContainer) legsContainer.innerHTML = `<div class="roster-leg-input"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
+                    loadAndRenderRosters();
+                } catch (error) {
+                    showNotification(`Error creating roster: ${error.message}`, 'error');
+                }
+            });
+        }
     }
 
     async function loadAndRenderRosters() {
@@ -364,41 +386,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    rosterManagementContainer?.addEventListener('click', async e => {
-        const deleteButton = e.target.closest('.delete-roster-btn');
-        const generateButton = e.target.closest('#generate-rosters-btn');
+    if (rosterManagementContainer) {
+        rosterManagementContainer.addEventListener('click', async e => {
+            const deleteButton = e.target.closest('.delete-roster-btn');
+            const generateButton = e.target.closest('#generate-rosters-btn');
 
-        if (deleteButton) {
-            const rosterId = deleteButton.dataset.id;
-            const rosterName = deleteButton.dataset.name;
-            if (confirm(`Are you sure you want to delete the roster "${rosterName}"?`)) {
-                try {
-                    await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
-                    showNotification('Roster deleted successfully.', 'success');
-                    loadAndRenderRosters();
-                } catch (error) {
-                    showNotification(`Error deleting roster: ${error.message}`, 'error');
+            if (deleteButton) {
+                const rosterId = deleteButton.dataset.id;
+                const rosterName = deleteButton.dataset.name;
+                if (confirm(`Are you sure you want to delete the roster "${rosterName}"?`)) {
+                    try {
+                        await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
+                        showNotification('Roster deleted successfully.', 'success');
+                        loadAndRenderRosters();
+                    } catch (error) {
+                        showNotification(`Error deleting roster: ${error.message}`, 'error');
+                    }
                 }
             }
-        }
 
-        if (generateButton) {
-            if (!confirm('Are you sure? This will replace all existing auto-generated rosters.')) return;
-            
-            generateButton.disabled = true;
-            generateButton.textContent = 'Generating...';
-            try {
-                const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
-                showNotification(result.message, 'success');
-                loadAndRenderRosters(); 
-            } catch (error) {
-                showNotification(`Generation failed: ${error.message}`, 'error');
-            } finally {
-                generateButton.disabled = false;
-                generateButton.textContent = 'Generate Rosters from Sheet';
+            if (generateButton) {
+                if (!confirm('Are you sure? This will replace all existing auto-generated rosters.')) return;
+                
+                generateButton.disabled = true;
+                generateButton.textContent = 'Generating...';
+                try {
+                    const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
+                    showNotification(result.message, 'success');
+                    loadAndRenderRosters(); 
+                } catch (error) {
+                    showNotification(`Generation failed: ${error.message}`, 'error');
+                } finally {
+                    generateButton.disabled = false;
+                    generateButton.textContent = 'Generate Rosters from Sheet';
+                }
             }
-        }
-    });
+        });
+    }
 
     // --- TAB SWITCHING LOGIC ---
     function attachTabListeners() {
@@ -409,15 +433,37 @@ document.addEventListener('DOMContentLoaded', () => {
             tab.addEventListener('click', () => {
                 tabLinks.forEach(item => item.classList.remove('active'));
                 tabContents.forEach(content => content.classList.remove('active'));
+                
                 tab.classList.add('active');
                 const target = document.getElementById(tab.dataset.tab);
                 if (target) target.classList.add('active');
 
+                // Efficiently load data on first tab click
                 const tabId = tab.dataset.tab;
-                if (tabId === 'tab-pilots') populatePilotDatabase();
-                if (tabId === 'tab-admin') populateAdminTools();
-                if (tabId === 'tab-pirep-management') loadPendingPireps();
-                if (tabId === 'tab-roster-management') loadAndRenderRosters();
+                if (tabId === 'tab-admin' && !dataLoaded.admin) {
+                    populateAdminTools();
+                    dataLoaded.admin = true;
+                }
+                if (tabId === 'tab-pilots' && !dataLoaded.pilotDb) {
+                    populatePilotDatabase();
+                    dataLoaded.pilotDb = true;
+                }
+                if (tabId === 'tab-pirep-management' && !dataLoaded.pireps) {
+                    loadPendingPireps();
+                    dataLoaded.pireps = true;
+                }
+                if (tabId === 'tab-roster-management' && !dataLoaded.rosters) {
+                    populateRosterManagement();
+                    dataLoaded.rosters = true;
+                }
+                if (tabId === 'tab-pilot-management' && !dataLoaded.pilotManagement) {
+                    populatePilotManagement();
+                    dataLoaded.pilotManagement = true;
+                }
+                 if (tabId === 'tab-community' && !dataLoaded.community) {
+                    populateCommunityManagement();
+                    dataLoaded.community = true;
+                }
             });
         });
     }
@@ -495,9 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const logEntries = logs.map(log => `
+        const logEntries = logs.slice(0, 50).map(log => `
             <div class="log-entry">
-                <p><strong>Action:</strong> ${log.action.replace('_', ' ')}</p>
+                <p><strong>Action:</strong> ${log.action.replace(/_/g, ' ')}</p>
                 <p><strong>Admin:</strong> ${log.adminUser?.name || 'Unknown'} (${log.adminUser?.email || '—'})</p>
                 <p><strong>Details:</strong> ${log.details}</p>
                 <small>${new Date(log.timestamp).toLocaleString()}</small>
@@ -520,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         safeFetch(`${API_BASE_URL}/api/rosters`).then(rosters => {
-            const rosterMap = new Map(rosters.map(r => [r._id, r.name]));
+            const rosterMap = new Map(rosters.map(r => [r._id.toString(), r.name]));
             container.innerHTML = onDutyPilots.map(pilot => `
                 <div class="live-ops-item" style="padding: 0.5rem; border-bottom: 1px solid #eee;">
                     <strong>${pilot.name} (${pilot.callsign || 'N/A'})</strong> is ON DUTY.
@@ -531,8 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '<p style="color: red;">Could not load roster data for live ops.</p>';
         });
     }
-
-    // ... (The rest of the file remains the same) ...
 
     // --- COMMUNITY: EVENTS & HIGHLIGHTS ---
     async function populateCommunityManagement() {
@@ -545,8 +589,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
         } catch (error) {
             console.error('Failed to populate community management lists:', error);
-            manageEventsContainer.innerHTML = '<p style="color:red;">Could not load events.</p>';
-            manageHighlightsContainer.innerHTML = '<p style="color:red;">Could not load highlights.</p>';
+            if(manageEventsContainer) manageEventsContainer.innerHTML = '<p style="color:red;">Could not load events.</p>';
+            if(manageHighlightsContainer) manageHighlightsContainer.innerHTML = '<p style="color:red;">Could not load highlights.</p>';
         }
     }
 
@@ -574,33 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- PILOT DATABASE & MANAGEMENT ---
-    function ensurePilotTab() {
-        if (!pilotTabLink) {
-            pilotTabLink = document.createElement('button');
-            pilotTabLink.id = 'pilot-tab-link';
-            pilotTabLink.className = 'tab-link';
-            pilotTabLink.dataset.tab = 'tab-pilots';
-            pilotTabLink.textContent = 'Pilot Database';
-            if (tabsContainer) tabsContainer.appendChild(pilotTabLink);
-        }
-
-        if (!pilotTabContent) {
-            pilotTabContent = document.createElement('div');
-            pilotTabContent.id = 'tab-pilots';
-            pilotTabContent.className = 'tab-content';
-            pilotTabContent.innerHTML = `<div id="pilot-db-container"><p>Loading pilots...</p></div>`;
-            const contentWrapper = document.querySelector('.tab-contents') || document.body;
-            contentWrapper.appendChild(pilotTabContent);
-        }
-        attachTabListeners();
-    }
-
     async function populatePilotDatabase() {
+        const container = document.getElementById('pilot-db-container');
+        if (!container) return;
         try {
             const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
             const pilots = (users || []).filter(u => u.role === 'pilot' || Boolean(u.callsign));
-            const container = document.getElementById('pilot-db-container');
-            if (!container) return;
 
             if (pilots.length === 0) {
                 container.innerHTML = '<p>No pilots found.</p>';
@@ -624,7 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = rows;
         } catch (error) {
             console.error('Failed to load pilot database:', error);
-            const container = document.getElementById('pilot-db-container');
             if (container) container.innerHTML = `<p style="color:red;">Could not load pilots: ${error.message}</p>`;
         }
     }
@@ -641,6 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPilotList(pilots) {
+        if(!pilotManagementContainer) return;
         if (pilots.length === 0) {
             pilotManagementContainer.innerHTML = '<p>No pilots found in the roster.</p>';
             return;
@@ -671,118 +694,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- CROPPER LOGIC ---
-    pictureInput?.addEventListener('change', (e) => {
-        const files = e.target.files;
-        if (files && files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                imageToCrop.src = reader.result;
-                if (cropperModal) cropperModal.style.display = 'flex';
-                if (cropper) cropper.destroy();
-                cropper = new Cropper(imageToCrop, {
-                    aspectRatio: 1 / 1,
-                    viewMode: 1,
-                    background: false,
-                });
-            };
-            reader.readAsDataURL(files[0]);
-        }
-    });
+    if(pictureInput) {
+        pictureInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (imageToCrop) imageToCrop.src = reader.result;
+                    if (cropperModal) cropperModal.style.display = 'flex';
+                    if (cropper) cropper.destroy();
+                    if(imageToCrop) {
+                        cropper = new Cropper(imageToCrop, {
+                            aspectRatio: 1 / 1,
+                            viewMode: 1,
+                            background: false,
+                        });
+                    }
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        });
+    }
 
-    cancelCropBtn?.addEventListener('click', () => {
-        if (cropperModal) cropperModal.style.display = 'none';
-        if (cropper) cropper.destroy();
-        if (pictureInput) pictureInput.value = '';
-    });
+    if(cancelCropBtn) {
+        cancelCropBtn.addEventListener('click', () => {
+            if (cropperModal) cropperModal.style.display = 'none';
+            if (cropper) cropper.destroy();
+            if (pictureInput) pictureInput.value = '';
+        });
+    }
 
-    cropAndSaveBtn?.addEventListener('click', () => {
-        if (cropper) {
-            cropper.getCroppedCanvas({ width: 250, height: 250 }).toBlob((blob) => {
-                croppedImageBlob = blob;
-                const previewUrl = URL.createObjectURL(blob);
-                if (profileCardPicture) profileCardPicture.src = previewUrl;
-                if (cropperModal) cropperModal.style.display = 'none';
-                cropper.destroy();
-                if (pictureInput) pictureInput.value = '';
-                showNotification('Picture ready to be saved.', 'info');
-            }, 'image/jpeg');
-        }
-    });
+    if(cropAndSaveBtn) {
+        cropAndSaveBtn.addEventListener('click', () => {
+            if (cropper) {
+                cropper.getCroppedCanvas({ width: 250, height: 250 }).toBlob((blob) => {
+                    croppedImageBlob = blob;
+                    const previewUrl = URL.createObjectURL(blob);
+                    if (profileCardPicture) profileCardPicture.src = previewUrl;
+                    if (cropperModal) cropperModal.style.display = 'none';
+                    cropper.destroy();
+                    if (pictureInput) pictureInput.value = '';
+                    showNotification('Picture ready to be saved.', 'info');
+                }, 'image/jpeg');
+            }
+        });
+    }
 
     // --- PROFILE UPDATE ---
-    profileForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData();
-        formData.append('name', document.getElementById('profile-name').value);
-        formData.append('bio', document.getElementById('profile-bio').value || '');
-        formData.append('discord', document.getElementById('profile-discord').value || '');
-        formData.append('ifc', document.getElementById('profile-ifc').value || '');
-        formData.append('youtube', document.getElementById('profile-youtube').value || '');
-        formData.append('preferredContact', document.getElementById('profile-preferred').value || 'none');
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById('profile-name').value);
+            formData.append('bio', document.getElementById('profile-bio').value || '');
+            formData.append('discord', document.getElementById('profile-discord').value || '');
+            formData.append('ifc', document.getElementById('profile-ifc').value || '');
+            formData.append('youtube', document.getElementById('profile-youtube').value || '');
+            formData.append('preferredContact', document.getElementById('profile-preferred').value || 'none');
 
-        if (croppedImageBlob) {
-            formData.append('profilePicture', croppedImageBlob, 'profile.jpg');
-        }
-
-        try {
-            const result = await safeFetch(`${API_BASE_URL}/api/me`, {
-                method: 'PUT',
-                body: formData
-            });
-            showNotification('Profile updated successfully!', 'success');
-            if (result.token) localStorage.setItem('authToken', result.token);
-            const user = result.user;
-            welcomeMessage.textContent = `Welcome, ${user.name}!`;
-            profileCardName.textContent = user.name;
-            profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
-            if (user.imageUrl) {
-                profileCardPicture.src = `${user.imageUrl}?${new Date().getTime()}`;
+            if (croppedImageBlob) {
+                formData.append('profilePicture', croppedImageBlob, 'profile.jpg');
             }
-            croppedImageBlob = null;
-        } catch (error) {
-            showNotification(`Update failed: ${error.message}`, 'error');
-        }
-    });
+
+            try {
+                const result = await safeFetch(`${API_BASE_URL}/api/me`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                showNotification('Profile updated successfully!', 'success');
+                if (result.token) localStorage.setItem('authToken', result.token);
+                const user = result.user;
+                if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name}!`;
+                if (profileCardName) profileCardName.textContent = user.name;
+                if (profileCardBio) profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
+                if (user.imageUrl && profileCardPicture) {
+                    profileCardPicture.src = `${user.imageUrl}?${new Date().getTime()}`;
+                }
+                croppedImageBlob = null;
+            } catch (error) {
+                showNotification(`Update failed: ${error.message}`, 'error');
+            }
+        });
+    }
 
     // --- PASSWORD UPDATE ---
-    passwordForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const currentPassword = document.getElementById('current-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-        
-        if (newPassword !== confirmPassword) {
-            showNotification('New passwords do not match.', 'error');
-            return;
-        }
-        
-        try {
-            await safeFetch(`${API_BASE_URL}/api/me/password`, {
-                method: 'POST',
-                body: JSON.stringify({ currentPassword, newPassword })
-            });
-            showNotification('Password updated successfully!', 'success');
-            passwordForm.reset();
-        } catch (error) {
-            showNotification(`Password update failed: ${error.message}`, 'error');
-        }
-    });
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                showNotification('New passwords do not match.', 'error');
+                return;
+            }
+            
+            try {
+                await safeFetch(`${API_BASE_URL}/api/me/password`, {
+                    method: 'POST',
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                showNotification('Password updated successfully!', 'success');
+                passwordForm.reset();
+            } catch (error) {
+                showNotification(`Password update failed: ${error.message}`, 'error');
+            }
+        });
+    }
 
     // --- ADD MEMBER (ADMIN) ---
     if (addMemberForm) {
-        if (!document.getElementById('new-member-callsign')) {
-            const roleEl = document.getElementById('new-member-role');
-            const callsignWrapper = document.createElement('div');
-            callsignWrapper.innerHTML = `
-                <label for="new-member-callsign">Callsign (optional)</label>
-                <input id="new-member-callsign" name="callsign" placeholder="e.g. INDGO-01" />
-            `;
-            if (roleEl && roleEl.parentNode) {
-                roleEl.parentNode.insertBefore(callsignWrapper, roleEl.nextSibling);
-            } else {
-                addMemberForm.appendChild(callsignWrapper);
-            }
-        }
         addMemberForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('new-member-email').value;
@@ -799,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('User created successfully!', 'success');
                 addMemberForm.reset();
-                populateAdminTools();
+                populateAdminTools(); // Refresh user list
             } catch (error) {
                 showNotification(`Failed to create user: ${error.message}`, 'error');
             }
@@ -844,8 +866,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ callsign })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
+                    // Refresh data in both admin and pilot tabs
                     populateAdminTools();
-                    populatePilotDatabase();
+                    if(dataLoaded.pilotDb) populatePilotDatabase();
                 } catch (error) {
                     showNotification(`Failed to set callsign: ${error.message}`, 'error');
                 }
@@ -865,10 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     showNotification('User role updated successfully.', 'success');
                     populateAdminTools();
-                    populatePilotDatabase();
                 } catch (error) {
                     showNotification(`Failed to update role: ${error.message}`, 'error');
-                    populateAdminTools();
+                    populateAdminTools(); // Refresh to show original value
                 }
             }
         });
@@ -897,27 +919,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- EVENT DELEGATION: PILOT MANAGEMENT ---
-    pilotManagementContainer?.addEventListener('change', async (e) => {
-        if (e.target.classList.contains('rank-select')) {
-            const selectElement = e.target;
-            const userId = selectElement.dataset.userid;
-            const newRank = selectElement.value;
-            if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
-                populatePilotManagement();
-                return;
+    if(pilotManagementContainer) {
+        pilotManagementContainer.addEventListener('change', async (e) => {
+            if (e.target.classList.contains('rank-select')) {
+                const selectElement = e.target;
+                const userId = selectElement.dataset.userid;
+                const newRank = selectElement.value;
+                if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
+                    populatePilotManagement(); // Revert the change in the UI
+                    return;
+                }
+                try {
+                    await safeFetch(`${API_BASE_URL}/api/users/${userId}/rank`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ newRank })
+                    });
+                    showNotification('Pilot rank updated successfully!', 'success');
+                } catch (error) {
+                    showNotification(`Failed to update rank: ${error.message}`, 'error');
+                    populatePilotManagement();
+                }
             }
-            try {
-                await safeFetch(`${API_BASE_URL}/api/users/${userId}/rank`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ newRank })
-                });
-                showNotification('Pilot rank updated successfully!', 'success');
-            } catch (error) {
-                showNotification(`Failed to update rank: ${error.message}`, 'error');
-                populatePilotManagement();
-            }
-        }
-    });
+        });
+    }
 
     document.body.addEventListener('click', async (e) => {
         const btn = e.target.closest('.pilot-set-callsign-btn');
@@ -936,7 +960,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ callsign })
             });
             showNotification('Callsign updated successfully.', 'success');
-            populateAdminTools();
+            // Refresh data in both admin and pilot tabs
+            if(dataLoaded.admin) populateAdminTools();
             populatePilotDatabase();
         } catch (error) {
             showNotification(`Failed to update callsign: ${error.message}`, 'error');
@@ -976,8 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('title', document.getElementById('highlight-title').value);
             formData.append('winnerName', document.getElementById('highlight-winner').value);
             formData.append('description', document.getElementById('highlight-description').value);
-            const hi = document.getElementById('highlight-image')?.files[0];
-            if (hi) formData.append('highlightImage', hi);
+            const highlightImageInput = document.getElementById('highlight-image');
+            if (highlightImageInput?.files[0]) formData.append('highlightImage', highlightImageInput.files[0]);
             try {
                 await safeFetch(`${API_BASE_URL}/api/highlights`, {
                     method: 'POST',
@@ -993,15 +1018,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- LOGOUT ---
-    logoutBtn?.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        window.location.href = 'index.html';
-    });
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('authToken');
+            window.location.href = 'index.html';
+        });
+    }
     
     // --- MOBILE MENU ---
     const hamburger = document.querySelector('.hamburger-menu');
     const navMenu = document.querySelector('.nav-menu');
-    if (hamburger) {
+    if (hamburger && navMenu) {
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
