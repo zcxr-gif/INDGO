@@ -12,8 +12,13 @@
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="/images/indgo.png" alt="Logo" class="logo-image">
-                <span class="logo-text">Crew Center</span>
+                <div class="logo-container">
+                    <img src="/images/indgo.png" alt="Logo" class="logo-image">
+                    <span class="logo-text">Crew Center</span>
+                </div>
+                 <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
@@ -22,10 +27,17 @@
                     <li><a href="#" class="nav-link" data-view="view-file-pirep"><i class="fa-solid fa-file-signature"></i><span class="nav-text">File PIREP</span></a></li>
                     <li><a href="#" class="nav-link" data-view="view-rosters"><i class="fa-solid fa-map-location-dot"></i><span class="nav-text">Sector Ops</span></a></li>
                     <li><a href="#" class="nav-link" data-view="view-history"><i class="fa-solid fa-clock-rotate-left"></i><span class="nav-text">Flight Log</span></a></li>
-                </ul>
+                    </ul>
             </nav>
 
             <div class="sidebar-footer">
+                 <div class="sidebar-profile">
+                    <img id="profile-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
+                    <div class="profile-details">
+                        <h3 id="pilot-name">Loading...</h3>
+                        <p id="pilot-callsign" class="user-role">Loading...</p>
+                    </div>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <strong>Rank</strong>
@@ -36,19 +48,10 @@
                         <span id="flight-hours">---</span>
                     </div>
                 </div>
-                 <a href="dashboard.html" class="dashboard-link"><i class="fas fa-tachometer-alt"></i><span class="nav-text">Dashboard</span></a>
-                 <a href="#" id="logout-button" class="logout-button"><i class="fas fa-sign-out-alt"></i><span class="nav-text">Logout</span></a>
-            </div>
-
-            <div class="sidebar-profile">
-                <img id="profile-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
-                <div class="profile-details">
-                    <h3 id="pilot-name">Loading...</h3>
-                    <p id="pilot-callsign" class="user-role">Loading...</p>
+                <div class="sidebar-actions">
+                     <a href="dashboard.html" class="dashboard-link"><i class="fas fa-tachometer-alt"></i><span class="nav-text">Dashboard</span></a>
+                     <a href="#" id="logout-button" class="logout-button"><i class="fas fa-sign-out-alt"></i><span class="nav-text">Logout</span></a>
                 </div>
-                <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
-                    <i class="fas fa-angle-double-left"></i>
-                </button>
             </div>
         </aside>
 
