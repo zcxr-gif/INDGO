@@ -192,7 +192,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         <small>Hub: ${roster.hub} | Total Time: ${roster.totalFlightTime.toFixed(1)} hrs</small>
                         <div class="roster-path">${roster.legs.map(l => l.departure).join(' → ')} → ${roster.legs.slice(-1)[0].arrival}</div>
                     </div>
-                    <button class="cta-button go-on-duty-btn" data-roster-id="${roster._id}">Go On Duty</button>
+                    
+                    <div class="roster-actions">
+                        <button class="details-button" data-roster-id="${roster._id}">Details</button>
+                        <button class="cta-button go-on-duty-btn" data-roster-id="${roster._id}">Go On Duty</button>
+                    </div>
+    
+                    <div class="roster-leg-details" id="details-${roster._id}">
+                        <ul>
+                            ${roster.legs.map(leg => `
+                                <li>
+                                    <span class="leg-flight-number">${leg.flightNumber} (${leg.departure} → ${leg.arrival})</span>
+                                    <span class="leg-aircraft">${leg.aircraft}</span>
+                                    <span class="leg-time">${leg.flightTime.toFixed(1)} hrs</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
                 </div>
             `).join('');
         } catch (error) {
@@ -274,6 +290,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     mainContentContainer.addEventListener('click', async (e) => {
+        // NEW: Logic for the details button
+        if (e.target.classList.contains('details-button')) {
+            const rosterId = e.target.dataset.rosterId;
+            const detailsPanel = document.getElementById(`details-${rosterId}`);
+            if (detailsPanel) {
+                detailsPanel.classList.toggle('visible');
+                e.target.textContent = detailsPanel.classList.contains('visible') ? 'Hide' : 'Details';
+            }
+        }
+    
         if (e.target.classList.contains('go-on-duty-btn')) {
             const rosterId = e.target.dataset.rosterId;
             e.target.disabled = true;
@@ -290,8 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
-                e.target.disabled = false;
-                e.target.textContent = 'Go On Duty';
+                // Find all buttons for this roster to re-enable them
+                document.querySelectorAll(`.go-on-duty-btn[data-roster-id="${rosterId}"]`).forEach(btn => {
+                    btn.disabled = false;
+                    btn.textContent = 'Go On Duty';
+                });
             }
         }
         if (e.target.id === 'end-duty-btn') {

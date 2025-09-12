@@ -233,3 +233,70 @@ input, textarea { width: 100%; padding: 0.8rem; border-radius: 5px; border: 1px 
 .end-duty-btn { background-color: var(--error-color); color: white; }
 .end-duty-btn:hover { background: #9b2c2c; }
 .cta-button:disabled, .end-duty-btn:disabled { background: #555; cursor: not-allowed; }
+
+/* --- Additions for Roster Details --- */
+
+/* Container to hold the action buttons */
+.roster-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+/* New secondary button style for "Details" */
+.details-button {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--dashboard-text-muted);
+}
+.details-button:hover {
+    background-color: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+/* The details panel, hidden by default */
+.roster-leg-details {
+    display: none;
+    width: 100%; /* Take full width of the roster item */
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-basis: 100%; /* Ensures it takes a new line in flex container */
+}
+/* This class will be toggled by JS to show the panel */
+.roster-leg-details.visible {
+    display: block;
+}
+
+.roster-leg-details ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.roster-leg-details li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(13, 16, 28, 0.6);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.leg-aircraft {
+    font-style: italic;
+    color: var(--dashboard-text-muted);
+}
+
+.leg-time {
+    font-weight: bold;
+}
