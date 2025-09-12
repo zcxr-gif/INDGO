@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarNav = document.querySelector('.sidebar-nav');
     const dashboardContainer = document.querySelector('.dashboard-container');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+    
+    // --- NEW: MODAL DOM ELEMENTS ---
+    const promotionModal = document.getElementById('promotion-modal');
+    const promoRankName = document.getElementById('promo-rank-name');
+    const promoHoursRequired = document.getElementById('promo-hours-required');
+    const promoPerksList = document.getElementById('promo-perks-list');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
 
     // --- Sidebar Toggle Logic ---
     const sidebarState = localStorage.getItem('sidebarState');
@@ -35,6 +44,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!token) {
         window.location.href = 'login.html';
         return;
+    }
+    
+    // --- NEW: PROMOTION MODAL LOGIC ---
+    function showPromotionModal(details) {
+        promoRankName.textContent = details.newRank;
+        promoHoursRequired.textContent = `${details.flightHoursRequired} hrs`;
+        promoPerksList.innerHTML = details.perks.map(perk => `<li>${perk}</li>`).join('');
+        promotionModal.classList.add('visible');
+    }
+    
+    function hidePromotionModal() {
+        promotionModal.classList.remove('visible');
     }
 
     // --- Core Data Fetching ---
@@ -340,7 +361,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to end duty.');
-                showNotification(result.message, 'success');
+                
+                // --- MODIFIED: CHECK FOR PROMOTION ---
+                // We check the result from the API call. The backend now sends a 'promotionDetails' object if a promotion occurred.
+                if (result.promotionDetails) {
+                    showPromotionModal(result.promotionDetails);
+                } else {
+                    showNotification(result.message, 'success');
+                }
+                // --- END MODIFICATION ---
+
                 await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
@@ -350,6 +380,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // --- NEW: MODAL CLOSE EVENT LISTENERS ---
+    modalCloseBtn.addEventListener('click', hidePromotionModal);
+    modalConfirmBtn.addEventListener('click', hidePromotionModal);
+    promotionModal.addEventListener('click', (e) => {
+        // Close the modal if the user clicks on the overlay itself, not the content
+        if (e.target === promotionModal) {
+            hidePromotionModal();
+        }
+    });
+
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('authToken');
         showNotification('You have been logged out.', 'info');

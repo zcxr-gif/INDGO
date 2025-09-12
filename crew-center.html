@@ -83,7 +83,27 @@
             </div>
         </main>
     </div>
-
+    
+    <div id="promotion-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="modal-close-btn" class="modal-close">&times;</button>
+            <div class="modal-header">
+                <h2>🎉 Congratulations! Promotion Unlocked! 🎉</h2>
+            </div>
+            <div class="modal-body">
+                <p>Your hard work has paid off. You have been promoted to:</p>
+                <h3 id="promo-rank-name">New Rank Name</h3>
+                <p class="promo-hours">Flight Hours Required: <strong id="promo-hours-required">0 hrs</strong></p>
+                
+                <h4>New Perks Unlocked:</h4>
+                <ul id="promo-perks-list">
+                    </ul>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-confirm-btn" class="cta-button">Awesome!</button>
+            </div>
+        </div>
+    </div>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="crew-center.js"></script>
 </body>
