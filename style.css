@@ -1158,6 +1158,52 @@ a {
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
+/* --- Dashboard Roster Management Form --- */
+#roster-legs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.roster-leg-input {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.roster-leg-input input {
+    flex-grow: 1; /* Allows inputs to fill the space */
+}
+
+.remove-leg-btn {
+    background-color: #c53030;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0; /* Prevents button from shrinking */
+    transition: background-color 0.2s ease;
+}
+
+.remove-leg-btn:hover {
+    background-color: #9b2c2c;
+}
+
+.cta-button.secondary {
+    background: transparent;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+}
+.cta-button.secondary:hover {
+    background: var(--accent-color);
+    color: white;
+}
+
 /* --- Login & Forms --- */
 .form-container {
     max-width: 450px;
