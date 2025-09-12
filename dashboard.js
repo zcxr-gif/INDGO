@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileForm = document.getElementById('profile-form');
     const passwordForm = document.getElementById('password-form');
     const addMemberForm = document.getElementById('add-member-form');
-    const logoutBtn = document.getElementById('logout-btn');
+    const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn'); // Corrected logout button ID
 
     // --- TAB LINKS ---
     const adminTabLink = document.getElementById('admin-tab-link');
@@ -140,34 +140,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const profilePreferredEl = document.getElementById('profile-preferred');
             if (profilePreferredEl) profilePreferredEl.value = user.preferredContact || 'none';
 
-            // --- ROLE-BASED TAB VISIBILITY ---
+            // --- ROLE-BASED TAB VISIBILITY (MERGED) ---
+            const showTab = (element) => { if (element) element.style.display = 'list-item'; };
+
             if (user.role === 'admin') {
-                if (adminTabLink) adminTabLink.style.display = 'inline-block';
-                if (pilotTabLink) pilotTabLink.style.display = 'inline-block';
+                showTab(adminTabLink);
+                showTab(pilotTabLink);
             }
 
             const communityRoles = ['Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'admin', 'Chief Marketing Officer (CMO)', 'Events Manager (EM)'];
             if (communityRoles.includes(user.role)) {
-                if (communityTabLink) communityTabLink.style.display = 'inline-block';
+                showTab(communityTabLink);
             }
 
             const pilotManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Head of Training (COT)'];
             if (pilotManagerRoles.includes(user.role)) {
-                if (pilotManagementTabLink) pilotManagementTabLink.style.display = 'inline-block';
+                showTab(pilotManagementTabLink);
             }
             
             const pirepManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'PIREP Manager (PM)'];
             if (pirepManagerRoles.includes(user.role)) {
-                if (pirepTabLink) pirepTabLink.style.display = 'inline-block';
+                showTab(pirepTabLink);
             }
 
             const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
             if (routeManagerRoles.includes(user.role)) {
-                if (rosterTabLink) rosterTabLink.style.display = 'inline-block';
+                showTab(rosterTabLink);
             }
-
-            const fadeInEl = document.querySelector('.fade-in');
-            if (fadeInEl) fadeInEl.classList.add('visible');
             
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -273,10 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!rosterManagementContainer) return;
         
         rosterManagementContainer.innerHTML = `
-            <h2>Roster Management ✈️</h2>
+            <h2><i class="fas fa-clipboard-list"></i> Roster Management</h2>
             <p>Create and manage daily rosters for the Sector Ops system.</p>
             
-            <div id="roster-automation-panel" style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem; background-color: #f9f9f9;">
+            <div id="roster-automation-panel" style="background: var(--secondary-bg); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 2rem;">
                 <h3>Automated Roster Generation</h3>
                 <p>Automatically generate a new set of daily rosters from the master Google Sheet. This will delete all previously auto-generated rosters.</p>
                 <button id="generate-rosters-btn" class="cta-button">Generate Rosters from Sheet</button>
@@ -290,11 +289,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="form-group"><label for="roster-time">Total Estimated Flight Time (Hours)</label><input type="number" id="roster-time" step="0.1" min="0" required></div>
                     <h4>Roster Legs</h4>
                     <div id="roster-legs-container">
-                        <div class="roster-leg-input">
+                        <div class="roster-leg-input" style="display: flex; gap: 10px; margin-bottom: 10px;">
                             <input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4">
                         </div>
                     </div>
-                    <button type="button" id="add-leg-btn" class="cta-button secondary">Add Leg</button>
+                    <button type="button" id="add-leg-btn" class="cta-button">Add Leg</button>
                     <hr style="margin: 1rem 0;">
                     <button type="submit" class="cta-button">Create Roster</button>
                 </form>
@@ -314,7 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const legContainer = document.getElementById('roster-legs-container');
                 const newLeg = document.createElement('div');
                 newLeg.className = 'roster-leg-input';
-                newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn">&times;</button>`;
+                newLeg.style.display = 'flex';
+                newLeg.style.gap = '10px';
+                newLeg.style.marginBottom = '10px';
+                newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn" style="background: var(--error-color); border: none; color: white; border-radius: 5px; padding: 0 10px;">&times;</button>`;
                 if(legContainer) legContainer.appendChild(newLeg);
             });
         }
@@ -352,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
                     showNotification('Roster created successfully!', 'success');
                     e.target.reset();
-                    if(legsContainer) legsContainer.innerHTML = `<div class="roster-leg-input"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
+                    if(legsContainer) legsContainer.innerHTML = `<div class="roster-leg-input" style="display: flex; gap: 10px; margin-bottom: 10px;"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
                     loadAndRenderRosters();
                 } catch (error) {
                     showNotification(`Error creating roster: ${error.message}`, 'error');
@@ -424,43 +426,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- TAB SWITCHING LOGIC ---
+    // --- TAB SWITCHING LOGIC (MERGED) ---
     function attachTabListeners() {
-        const tabLinks = document.querySelectorAll('.tab-link');
-        const tabContents = document.querySelectorAll('.tab-content');
+        const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+        const contentCards = document.querySelectorAll('.main-content .content-card');
 
-        tabLinks.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabLinks.forEach(item => item.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault(); 
+
+                navLinks.forEach(item => item.classList.remove('active'));
+                contentCards.forEach(content => content.classList.remove('active'));
                 
-                tab.classList.add('active');
-                const target = document.getElementById(tab.dataset.tab);
-                if (target) target.classList.add('active');
+                link.classList.add('active');
+                const viewId = link.dataset.view;
+                const target = document.getElementById(viewId);
+                if (target) {
+                    target.classList.add('active');
+                }
 
-                // Efficiently load data on first tab click
-                const tabId = tab.dataset.tab;
-                if (tabId === 'tab-admin' && !dataLoaded.admin) {
+                // Efficiently load data on first view click
+                if (viewId === 'tab-admin' && !dataLoaded.admin) {
                     populateAdminTools();
                     dataLoaded.admin = true;
                 }
-                if (tabId === 'tab-pilots' && !dataLoaded.pilotDb) {
+                if (viewId === 'tab-pilots' && !dataLoaded.pilotDb) {
                     populatePilotDatabase();
                     dataLoaded.pilotDb = true;
                 }
-                if (tabId === 'tab-pirep-management' && !dataLoaded.pireps) {
+                if (viewId === 'tab-pirep-management' && !dataLoaded.pireps) {
                     loadPendingPireps();
                     dataLoaded.pireps = true;
                 }
-                if (tabId === 'tab-roster-management' && !dataLoaded.rosters) {
+                if (viewId === 'tab-roster-management' && !dataLoaded.rosters) {
                     populateRosterManagement();
                     dataLoaded.rosters = true;
                 }
-                if (tabId === 'tab-pilot-management' && !dataLoaded.pilotManagement) {
+                if (viewId === 'tab-pilot-management' && !dataLoaded.pilotManagement) {
                     populatePilotManagement();
                     dataLoaded.pilotManagement = true;
                 }
-                 if (tabId === 'tab-community' && !dataLoaded.community) {
+                 if (viewId === 'tab-community' && !dataLoaded.community) {
                     populateCommunityManagement();
                     dataLoaded.community = true;
                 }
@@ -1017,9 +1023,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- LOGOUT ---
-    if(logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+    // --- LOGOUT (MERGED) ---
+    if(sidebarLogoutBtn) {
+        sidebarLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             localStorage.removeItem('authToken');
             window.location.href = 'index.html';
         });
