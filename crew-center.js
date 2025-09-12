@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
     const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
-    // --- Notification Function (No change) ---
+    // --- Notification Function ---
     function showNotification(message, type) {
         Toastify({ text: message, duration: 3000, close: true, gravity: "top", position: "right", stopOnFocus: true, style: { background: type === 'success' ? "#28a745" : type === 'error' ? "#dc3545" : "#001B94" } }).showToast();
     }
@@ -16,6 +16,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logout-button');
     const mainContentContainer = document.querySelector('.main-content');
     const sidebarNav = document.querySelector('.sidebar-nav');
+    const dashboardContainer = document.querySelector('.dashboard-container');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+
+    // --- Sidebar Toggle Logic ---
+    // Check localStorage to set the initial state
+    const sidebarState = localStorage.getItem('sidebarState');
+    if (sidebarState === 'collapsed') {
+        dashboardContainer.classList.add('sidebar-collapsed');
+    }
+
+    // Add click event to the toggle button
+    sidebarToggleBtn.addEventListener('click', () => {
+        dashboardContainer.classList.toggle('sidebar-collapsed');
+        // Save the new state to localStorage
+        if (dashboardContainer.classList.contains('sidebar-collapsed')) {
+            localStorage.setItem('sidebarState', 'collapsed');
+        } else {
+            localStorage.setItem('sidebarState', 'expanded');
+        }
+    });
 
     // --- Authentication Check ---
     if (!token) {
@@ -36,14 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const pilot = await response.json();
             
-            // 1. Populate sidebar profile (always visible)
+            // Populate sidebar profile (always visible)
             pilotNameElem.textContent = pilot.name || 'N/A';
             pilotCallsignElem.textContent = pilot.callsign || 'N/A';
             pilotRankElem.textContent = pilot.rank || 'N/A';
             flightHoursElem.textContent = (pilot.flightHours || 0).toFixed(1);
             profilePictureElem.src = pilot.imageUrl || 'images/default-avatar.png';
 
-            // 2. Render the content views based on duty status
+            // Render the content views based on duty status
             await renderAllViews(pilot);
 
         } catch (error) {
@@ -54,13 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI Rendering Logic ---
     const renderAllViews = async (pilot) => {
-        // Render content for each view, which will be shown/hidden by the navigation logic
         if (pilot.dutyStatus === 'ON_DUTY') {
             await renderOnDutyViews(pilot);
         } else {
             await renderOnRestViews();
         }
-        // Always render these
         await fetchAndDisplayRosters();
         await fetchPirepHistory();
     };
@@ -100,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const filedPirepsForRoster = allPireps.filter(p => p.rosterLeg?.rosterId === currentRoster._id);
             const filedFlightNumbers = new Set(filedPirepsForRoster.map(p => p.flightNumber));
 
-            // Render Duty Status View
             dutyStatusView.innerHTML = `
                 <div class="content-card">
                     <div class="on-duty-header">
@@ -119,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
             
-            // Render PIREP Form View
             filePirepView.innerHTML = `
                 <div class="content-card">
                     <h2><i class="fa-solid fa-file-signature"></i> File Next Flight Report (PIREP)</h2>
@@ -197,32 +213,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- Event Listeners ---
-    
-    // Sidebar Navigation
     sidebarNav.addEventListener('click', (e) => {
         const link = e.target.closest('.nav-link');
         if (!link) return;
-
         e.preventDefault();
-        
-        // Update active link
         sidebarNav.querySelector('.nav-link.active').classList.remove('active');
         link.classList.add('active');
-
-        // Switch view
         const viewId = link.dataset.view;
         mainContentContainer.querySelector('.content-view.active').classList.remove('active');
         document.getElementById(viewId).classList.add('active');
     });
 
-    // Delegated listeners for dynamic content (PIREP form, Duty buttons)
     mainContentContainer.addEventListener('submit', async (e) => {
         if (e.target.id === 'pirep-form') {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             btn.disabled = true;
             btn.textContent = 'Filing...';
-
             const flightData = {
                 flightNumber: document.getElementById('flight-number').value.toUpperCase(),
                 departure: document.getElementById('departure-icao').value.toUpperCase(),
@@ -231,7 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 flightTime: document.getElementById('flight-time').value,
                 remarks: document.getElementById('remarks').value,
             };
-
             try {
                 const response = await fetch(`${API_BASE_URL}/api/pireps`, {
                     method: 'POST',
@@ -240,10 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to file report.');
-                
                 showNotification('Report submitted successfully!', 'success');
-                fetchPilotData(); // Reload all data and views
-                
+                fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
                 btn.disabled = false;
@@ -253,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     mainContentContainer.addEventListener('click', async (e) => {
-        // Go On Duty
         if (e.target.classList.contains('go-on-duty-btn')) {
             const rosterId = e.target.dataset.rosterId;
             e.target.disabled = true;
@@ -266,17 +269,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to start duty.');
-                
                 showNotification(result.message, 'success');
-                await fetchPilotData(); // Reload to switch UI
+                await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
                 e.target.disabled = false;
                 e.target.textContent = 'Go On Duty';
             }
         }
-
-        // End Duty
         if (e.target.id === 'end-duty-btn') {
             e.target.disabled = true;
             e.target.textContent = 'Completing...';
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to end duty.');
                 showNotification(result.message, 'success');
-                await fetchPilotData(); // Reload to switch UI
+                await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
                 e.target.disabled = false;
@@ -297,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Logout
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('authToken');
         showNotification('You have been logged out.', 'info');
