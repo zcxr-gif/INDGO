@@ -18,16 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
 
     // --- Sidebar Toggle Logic ---
-    // Check localStorage to set the initial state
     const sidebarState = localStorage.getItem('sidebarState');
     if (sidebarState === 'collapsed') {
         dashboardContainer.classList.add('sidebar-collapsed');
     }
-
-    // Add click event to the toggle button
     sidebarToggleBtn.addEventListener('click', () => {
         dashboardContainer.classList.toggle('sidebar-collapsed');
-        // Save the new state to localStorage
         if (dashboardContainer.classList.contains('sidebar-collapsed')) {
             localStorage.setItem('sidebarState', 'collapsed');
         } else {
@@ -54,14 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const pilot = await response.json();
             
-            // Populate sidebar profile (always visible)
             pilotNameElem.textContent = pilot.name || 'N/A';
             pilotCallsignElem.textContent = pilot.callsign || 'N/A';
             profilePictureElem.src = pilot.imageUrl || 'images/default-avatar.png';
 
-            // Render the content views based on duty status
             await renderAllViews(pilot);
-
         } catch (error) {
             console.error('Error fetching pilot data:', error);
             showNotification(error.message, 'error');
@@ -92,23 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pilot.dutyStatus === 'ON_DUTY') {
             await renderOnDutyViews(pilot);
         } else {
-            await renderOnRestViews(pilot); // Pass pilot data
+            await renderOnRestViews(pilot);
         }
-        await fetchAndDisplayRosters();
+        await fetchAndDisplayRosters(); // UPDATED to use the new personalized endpoint
         await fetchPirepHistory();
     };
 
-    const renderOnRestViews = async (pilot) => { // Accept pilot data
+    const renderOnRestViews = async (pilot) => {
         const dutyStatusView = document.getElementById('view-duty-status');
         const filePirepView = document.getElementById('view-file-pirep');
         
-        // Render duty status and stats card
         dutyStatusView.innerHTML = `
             <div class="content-card">
                 <h2><i class="fa-solid fa-plane-departure"></i> Duty Status: 🔴 On Rest</h2>
                 <p>You are currently on crew rest. To begin your next duty, please select an available flight roster from the Sector Ops page.</p>
             </div>
-            ${createStatsCardHTML(pilot)}`; // Add stats card HTML
+            ${createStatsCardHTML(pilot)}`;
 
         filePirepView.innerHTML = `
             <div class="content-card">
@@ -123,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const [rosterRes, pirepsRes] = await Promise.all([
+                // Fetching all rosters to find the current one is still okay here.
                 fetch(`${API_BASE_URL}/api/rosters`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`${API_BASE_URL}/api/me/pireps`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
@@ -174,17 +167,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // --- Helper Data Fetchers ---
+    // --- *** UPDATED DATA FETCHER FOR ROSTERS *** ---
     const fetchAndDisplayRosters = async () => {
         const container = document.getElementById('roster-list-container');
+        const header = document.getElementById('roster-list-header');
         try {
-            const response = await fetch(`${API_BASE_URL}/api/rosters`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!response.ok) throw new Error('Could not fetch rosters for your location.');
-            const rosters = await response.json();
+            // **CHANGE**: Call the new personalized endpoint
+            const response = await fetch(`${API_BASE_URL}/api/rosters/my-rosters`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error('Could not fetch personalized rosters.');
+            
+            const data = await response.json();
+            const rosters = data.rosters; // The rosters are now in a nested object
+            const criteria = data.searchCriteria;
+
+            // **NEW**: Dynamically update the header text
+            if (criteria.searched.length > 0) {
+                header.innerHTML = `Showing rosters based on your location at: <strong>${criteria.searched.join(' & ')}</strong>`;
+            } else {
+                 header.innerHTML = 'No location data found. Showing rosters from primary hubs.';
+            }
+
             if (rosters.length === 0) {
-                container.innerHTML = '<p>There are no rosters available from your current location. Please check back later.</p>';
+                container.innerHTML = '<p>There are no rosters available from your current location(s). Please complete a flight or check back later.</p>';
                 return;
             }
+
+            // The rest of the rendering logic remains the same
             container.innerHTML = rosters.map(roster => `
                 <div class="roster-item">
                     <div class="roster-info">
@@ -213,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         } catch (error) {
             container.innerHTML = `<p class="error-text">${error.message}</p>`;
+            header.innerHTML = 'Could not load roster data.';
         }
     };
 
@@ -290,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     mainContentContainer.addEventListener('click', async (e) => {
-        // NEW: Logic for the details button
         if (e.target.classList.contains('details-button')) {
             const rosterId = e.target.dataset.rosterId;
             const detailsPanel = document.getElementById(`details-${rosterId}`);
@@ -316,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
-                // Find all buttons for this roster to re-enable them
                 document.querySelectorAll(`.go-on-duty-btn[data-roster-id="${rosterId}"]`).forEach(btn => {
                     btn.disabled = false;
                     btn.textContent = 'Go On Duty';
