@@ -34,7 +34,6 @@
                     <li id="community-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-community"><i class="fas fa-users"></i> Community</a></li>
                     <li id="admin-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-admin"><i class="fas fa-user-shield"></i> Admin Tools</a></li>
                     <li id="pilot-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilots"><i class="fas fa-database"></i> Pilot Database</a></li>
-                    <li id="codeshare-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-codeshare"><i class="fas fa-route"></i> Codeshare Routes</a></li>
                 </ul>
             </nav>
 
@@ -154,6 +153,10 @@
                     <h3>Add New Team Member</h3>
                     <form id="add-member-form" class="dashboard-form">
                         <div class="form-group">
+                            <label for="new-member-name">Full Name</label>
+                            <input type="text" id="new-member-name" required>
+                        </div>
+                        <div class="form-group">
                             <label for="new-member-email">Email Address</label>
                             <input type="email" id="new-member-email" required>
                         </div>
@@ -167,7 +170,7 @@
                                 <optgroup label="General Roles">
                                     <option value="staff">Staff</option>
                                     <option value="pilot">Pilot</option>
-                                    <option value="admin">Admin (Site Control)</option>
+                                    <option value="admin">Admin</option>
                                 </optgroup>
                                 <optgroup label="Leadership & Management">
                                     <option value="Chief Executive Officer (CEO)">Chief Executive Officer (CEO)</option>
@@ -279,21 +282,6 @@
                 <p>View pilots, ranks, flight hours and manage callsigns.</p>
                 <div id="pilot-db-container">
                     <p>Loading pilots...</p>
-                </div>
-            </div>
-
-            <div id="tab-codeshare" class="content-card">
-                <h2><i class="fas fa-route"></i> Codeshare Route Database</h2>
-                <p>View all available codeshare routes. Staff with 'Route Manager' or 'Admin' roles can import the latest routes from the master Google Sheet.</p>
-                
-                <div id="import-codeshare-panel" style="display: none; background: var(--secondary-bg); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 2rem;">
-                    <h3>Import Routes</h3>
-                    <p>Click the button below to clear the existing codeshare database and import the latest routes from all sheets in the configured Google Sheet.</p>
-                    <button id="import-codeshare-btn" class="cta-button">Import All Codeshare Routes</button>
-                </div>
-                
-                <div id="codeshare-routes-container">
-                    <p>Loading codeshare routes...</p>
                 </div>
             </div>
 

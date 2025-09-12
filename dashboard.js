@@ -24,13 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pirepTabLink = document.getElementById('pirep-tab-link');
     const rosterTabLink = document.getElementById('roster-tab-link');
     const pilotTabLink = document.getElementById('pilot-tab-link');
-    const codeshareTabLink = document.getElementById('codeshare-tab-link'); // NEW
 
     // --- PROFILE CARD ELEMENTS ---
     const profileCardPicture = document.getElementById('profile-card-picture');
     const profileCardName = document.getElementById('profile-card-name');
     const profileCardRole = document.getElementById('profile-card-role');
-    const profileCardBio = document.getElementById('profile-card-bio');
 
     // --- CONTAINERS & DYNAMIC ELEMENTS ---
     const pilotManagementContainer = document.getElementById('pilot-management-container');
@@ -40,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
     const pendingPirepsContainer = document.getElementById('pending-pireps-container');
     const rosterManagementContainer = document.getElementById('tab-roster-management');
-    const codeshareRoutesContainer = document.getElementById('codeshare-routes-container'); // NEW
     
     // --- APP STATE & CONFIG ---
     const token = localStorage.getItem('authToken');
@@ -50,7 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
         "Leadership & Management": ["Chief Executive Officer (CEO)", "Chief Operating Officer (COO)", "PIREP Manager (PM)", "Pilot Relations & Recruitment Manager (PR)", "Technology & Design Manager (TDM)", "Head of Training (COT)", "Chief Marketing Officer (CMO)", "Route Manager (RM)", "Events Manager (EM)"],
         "Flight Operations": ["Flight Instructor (FI)"]
     };
-    const pilotRanks = ['Cadet', 'Second Officer', 'First Officer', 'Senior First Officer', 'Captain', 'Senior Captain'];
+    // UPDATED: New rank structure from server.js
+    const pilotRanks = [
+        'IndGo Cadet', 'Skyline Observer', 'Route Explorer', 'Skyline Officer',
+        'Command Captain', 'Elite Captain', 'Blue Eagle', 'Line Instructor',
+        'Chief Flight Instructor', 'IndGo SkyMaster', 'Blue Legacy Commander'
+    ];
     
     // --- DATA LOADING FLAGS ---
     let dataLoaded = {
@@ -60,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         community: false,
         pilotManagement: false,
         pilotDb: false,
-        codeshare: false, // NEW
     };
 
     if (!token) {
@@ -101,10 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- UI NOTIFICATION HELPER ---
-    function showNotification(message, type = 'info') {
+    function showNotification(message, type = 'info', duration = 3000) {
         Toastify({
             text: message,
-            duration: 3000,
+            duration: duration,
             close: true,
             gravity: "top",
             position: "right",
@@ -125,23 +126,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
             if (profileCardName) profileCardName.textContent = user.name;
-            if (profileCardBio) profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
             if (profileCardRole) profileCardRole.textContent = user.role ? user.role.toUpperCase() : 'USER';
             if (profileCardPicture) profileCardPicture.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
 
             // Populate form fields
-            const profileNameEl = document.getElementById('profile-name');
-            if (profileNameEl) profileNameEl.value = user.name;
-            const profileBioEl = document.getElementById('profile-bio');
-            if (profileBioEl) profileBioEl.value = user.bio || '';
-            const profileDiscordEl = document.getElementById('profile-discord');
-            if (profileDiscordEl) profileDiscordEl.value = user.discord || '';
-            const profileIfcEl = document.getElementById('profile-ifc');
-            if (profileIfcEl) profileIfcEl.value = user.ifc || '';
-            const profileYoutubeEl = document.getElementById('profile-youtube');
-            if (profileYoutubeEl) profileYoutubeEl.value = user.youtube || '';
-            const profilePreferredEl = document.getElementById('profile-preferred');
-            if (profilePreferredEl) profilePreferredEl.value = user.preferredContact || 'none';
+            document.getElementById('profile-name').value = user.name;
+            document.getElementById('profile-bio').value = user.bio || '';
+            document.getElementById('profile-discord').value = user.discord || '';
+            document.getElementById('profile-ifc').value = user.ifc || '';
+            document.getElementById('profile-youtube').value = user.youtube || '';
+            document.getElementById('profile-preferred').value = user.preferredContact || 'none';
 
             // --- ROLE-BASED TAB VISIBILITY (MERGED) ---
             const showTab = (element) => { if (element) element.style.display = 'list-item'; };
@@ -169,9 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
             if (routeManagerRoles.includes(user.role)) {
                 showTab(rosterTabLink);
-                showTab(codeshareTabLink); // NEW: Show codeshare tab for Route Managers
-                const importPanel = document.getElementById('import-codeshare-panel');
-                if (importPanel) importPanel.style.display = 'block'; // NEW: Show import button panel
             }
             
         } catch (error) {
@@ -231,7 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.target.textContent = 'Approving...';
                 try {
                     const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/approve`, { method: 'PUT' });
-                    showNotification(result.message, 'success');
+                    
+                    // UPDATED: Handle detailed promotion notifications
+                    if (result.promotionDetails) {
+                        const perksList = result.promotionDetails.perks.map(perk => `<li>${perk}</li>`).join('');
+                        const promotionMessage = `
+                            ${result.message}<br>
+                            <strong>New Rank:</strong> ${result.promotionDetails.newRank}<br>
+                            <strong>Perks:</strong><ul>${perksList}</ul>
+                        `;
+                        showNotification(promotionMessage, 'success', 10000); // Show for longer
+                    } else {
+                        showNotification(result.message, 'success');
+                    }
+
                     const pirepCard = document.getElementById(`pirep-${pirepId}`);
                     if(pirepCard) pirepCard.remove();
                     if (pendingPirepsContainer.children.length === 0) {
@@ -239,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
+                } finally {
                     e.target.disabled = false;
                     e.target.textContent = 'Approve';
                 }
@@ -255,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/reject`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ reason })
                     });
                     showNotification(result.message, 'success');
@@ -266,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
+                } finally {
                     e.target.disabled = false;
                     e.target.textContent = 'Reject';
                 }
@@ -273,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ROSTER MANAGEMENT ---
+    // --- ROSTER MANAGEMENT (LOGIC CORRECTED) ---
     function populateRosterManagement() {
         if (!rosterManagementContainer) return;
         
@@ -292,11 +297,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <form id="create-roster-form" class="dashboard-form">
                     <div class="form-group"><label for="roster-name">Roster Name</label><input type="text" id="roster-name" required></div>
                     <div class="form-group"><label for="roster-hub">Hub ICAO</label><input type="text" id="roster-hub" required maxlength="4"></div>
-                    <div class="form-group"><label for="roster-time">Total Estimated Flight Time (Hours)</label><input type="number" id="roster-time" step="0.1" min="0" required></div>
                     <h4>Roster Legs</h4>
+                    <p style="font-size: 0.9em; color: var(--dashboard-text-muted); margin-bottom: 1rem;">Add at least one leg. The total flight time will be calculated automatically.</p>
                     <div id="roster-legs-container">
-                        <div class="roster-leg-input" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4">
+                        <div class="roster-leg-input" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end;">
+                            <input type="text" placeholder="Flight #" required style="flex: 1 1 100px;">
+                            <input type="text" placeholder="Aircraft" required style="flex: 1 1 100px;">
+                            <input type="text" placeholder="Departure ICAO" required maxlength="4" style="flex: 1 1 120px;">
+                            <input type="text" placeholder="Arrival ICAO" required maxlength="4" style="flex: 1 1 120px;">
+                            <input type="number" step="0.1" min="0.1" placeholder="Time (hrs)" required style="flex: 1 1 80px;">
                         </div>
                     </div>
                     <button type="button" id="add-leg-btn" class="cta-button">Add Leg</button>
@@ -313,66 +322,69 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadAndRenderRosters();
 
-        const addLegBtn = document.getElementById('add-leg-btn');
-        if(addLegBtn) {
-            addLegBtn.addEventListener('click', () => {
-                const legContainer = document.getElementById('roster-legs-container');
-                const newLeg = document.createElement('div');
-                newLeg.className = 'roster-leg-input';
-                newLeg.style.display = 'flex';
-                newLeg.style.gap = '10px';
-                newLeg.style.marginBottom = '10px';
-                newLeg.innerHTML = `<input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"><button type="button" class="remove-leg-btn" style="background: var(--error-color); border: none; color: white; border-radius: 5px; padding: 0 10px;">&times;</button>`;
-                if(legContainer) legContainer.appendChild(newLeg);
-            });
-        }
+        document.getElementById('add-leg-btn').addEventListener('click', () => {
+            const legContainer = document.getElementById('roster-legs-container');
+            const newLeg = document.createElement('div');
+            newLeg.className = 'roster-leg-input';
+            newLeg.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end;';
+            newLeg.innerHTML = `
+                <input type="text" placeholder="Flight #" required style="flex: 1 1 100px;">
+                <input type="text" placeholder="Aircraft" required style="flex: 1 1 100px;">
+                <input type="text" placeholder="Departure ICAO" required maxlength="4" style="flex: 1 1 120px;">
+                <input type="text" placeholder="Arrival ICAO" required maxlength="4" style="flex: 1 1 120px;">
+                <input type="number" step="0.1" min="0.1" placeholder="Time (hrs)" required style="flex: 1 1 80px;">
+                <button type="button" class="remove-leg-btn" style="background: var(--error-color); border: none; color: white; border-radius: 5px; padding: 0.5rem 0.75rem;">&times;</button>`;
+            legContainer.appendChild(newLeg);
+        });
         
-        const legsContainer = document.getElementById('roster-legs-container');
-        if(legsContainer) {
-            legsContainer.addEventListener('click', e => {
-                if (e.target.classList.contains('remove-leg-btn')) {
-                    e.target.parentElement.remove();
-                }
-            });
-        }
+        document.getElementById('roster-legs-container').addEventListener('click', e => {
+            if (e.target.classList.contains('remove-leg-btn')) {
+                e.target.parentElement.remove();
+            }
+        });
 
-        const createRosterForm = document.getElementById('create-roster-form');
-        if(createRosterForm) {
-            createRosterForm.addEventListener('submit', async e => {
-                e.preventDefault();
-                const legs = Array.from(document.querySelectorAll('.roster-leg-input')).map(legDiv => {
-                    const inputs = legDiv.querySelectorAll('input');
-                    return {
-                        flightNumber: inputs[0].value.toUpperCase(),
-                        departure: inputs[1].value.toUpperCase(),
-                        arrival: inputs[2].value.toUpperCase(),
-                    };
-                });
-
-                const rosterData = {
-                    name: document.getElementById('roster-name').value,
-                    hub: document.getElementById('roster-hub').value.toUpperCase(),
-                    totalFlightTime: parseFloat(document.getElementById('roster-time').value),
-                    legs: legs,
+        document.getElementById('create-roster-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            let totalFlightTime = 0;
+            const legs = Array.from(document.querySelectorAll('.roster-leg-input')).map(legDiv => {
+                const inputs = legDiv.querySelectorAll('input');
+                const legTime = parseFloat(inputs[4].value);
+                totalFlightTime += legTime;
+                return {
+                    flightNumber: inputs[0].value.toUpperCase(),
+                    aircraft: inputs[1].value,
+                    departure: inputs[2].value.toUpperCase(),
+                    arrival: inputs[3].value.toUpperCase(),
+                    flightTime: legTime,
                 };
-
-                try {
-                    // OPTIMIZATION: API now returns the new roster object
-                    const newRoster = await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
-                    showNotification('Roster created successfully!', 'success');
-                    e.target.reset();
-                    if(legsContainer) legsContainer.innerHTML = `<div class="roster-leg-input" style="display: flex; gap: 10px; margin-bottom: 10px;"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
-                    
-                    // OPTIMIZATION: Append the new roster directly instead of reloading the whole list
-                    const rosterContainer = document.getElementById('manage-rosters-container');
-                    const rosterElement = createRosterCardElement(newRoster);
-                    rosterContainer.prepend(rosterElement); // prepend to show at top
-
-                } catch (error) {
-                    showNotification(`Error creating roster: ${error.message}`, 'error');
-                }
             });
-        }
+
+            if (legs.length === 0) {
+                showNotification('You must add at least one leg to the roster.', 'error');
+                return;
+            }
+
+            const rosterData = {
+                name: document.getElementById('roster-name').value,
+                hub: document.getElementById('roster-hub').value.toUpperCase(),
+                totalFlightTime: totalFlightTime,
+                legs: legs,
+            };
+
+            try {
+                const newRoster = await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
+                showNotification('Roster created successfully!', 'success');
+                e.target.reset();
+                document.getElementById('roster-legs-container').innerHTML = `<div class="roster-leg-input" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end;"><input type="text" placeholder="Flight #" required style="flex: 1 1 100px;"><input type="text" placeholder="Aircraft" required style="flex: 1 1 100px;"><input type="text" placeholder="Departure ICAO" required maxlength="4" style="flex: 1 1 120px;"><input type="text" placeholder="Arrival ICAO" required maxlength="4" style="flex: 1 1 120px;"><input type="number" step="0.1" min="0.1" placeholder="Time (hrs)" required style="flex: 1 1 80px;"></div>`;
+                
+                const rosterContainer = document.getElementById('manage-rosters-container');
+                const rosterElement = createRosterCardElement(newRoster);
+                rosterContainer.prepend(rosterElement);
+
+            } catch (error) {
+                showNotification(`Error creating roster: ${error.message}`, 'error');
+            }
+        });
     }
 
     async function loadAndRenderRosters() {
@@ -394,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // OPTIMIZATION HELPER: Creates a single roster card element
     function createRosterCardElement(roster) {
         const card = document.createElement('div');
         card.className = 'user-manage-card';
@@ -424,8 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
                         showNotification('Roster deleted successfully.', 'success');
-                        
-                        // OPTIMIZATION: Remove the element directly from the DOM
                         deleteButton.closest('.user-manage-card').remove();
                     } catch (error) {
                         showNotification(`Error deleting roster: ${error.message}`, 'error');
@@ -441,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
                     showNotification(result.message, 'success');
-                    loadAndRenderRosters(); // Full refresh is appropriate here as many items change
+                    loadAndRenderRosters(); 
                 } catch (error) {
                     showNotification(`Generation failed: ${error.message}`, 'error');
                 } finally {
@@ -471,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     target.classList.add('active');
                 }
 
-                // Efficiently load data on first view click
                 if (viewId === 'tab-admin' && !dataLoaded.admin) {
                     populateAdminTools();
                     dataLoaded.admin = true;
@@ -496,11 +504,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     populateCommunityManagement();
                     dataLoaded.community = true;
                 }
-                // NEW: Load codeshare data
-                if (viewId === 'tab-codeshare' && !dataLoaded.codeshare) {
-                    populateCodeshareRoutes();
-                    dataLoaded.codeshare = true;
-                }
             });
         });
     }
@@ -508,11 +511,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ADMIN: POPULATE USERS & LOGS ---
     async function populateAdminTools() {
         try {
-            const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
+            const users = await safeFetch(`${API_BASE_URL}/api/users`);
             renderUserList(users);
             renderLiveOperations(users); 
 
-            const logs = await safeFetch(`${API_BASE_URL}/api/logs`, { method: 'GET' });
+            const logs = await safeFetch(`${API_BASE_URL}/api/logs`);
             renderLogList(logs);
         } catch (error) {
             console.error('Failed to populate admin tools:', error);
@@ -521,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // OPTIMIZATION HELPER: Creates role dropdown options
     const createRoleOptions = (selectedRole) => {
         let optionsHtml = '';
         for (const group in allRoles) {
@@ -535,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return optionsHtml;
     };
 
-    // OPTIMIZATION HELPER: Creates a single user card element
     function createUserCardElement(user) {
         const isCurrentUser = user._id === currentUserId;
         const controlsDisabled = isCurrentUser ? 'disabled' : '';
@@ -570,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderUserList(users) {
         if (!userListContainer) return;
-        userListContainer.innerHTML = ''; // Clear existing content
+        userListContainer.innerHTML = '';
         users.forEach(user => {
             const userCardElement = createUserCardElement(user);
             userListContainer.appendChild(userCardElement);
@@ -598,7 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
         logContainer.innerHTML = logEntries;
     }
 
-    // --- RENDER LIVE OPERATIONS ---
     function renderLiveOperations(users) {
         const container = document.getElementById('live-ops-container');
         if (!container) return;
@@ -613,9 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
         safeFetch(`${API_BASE_URL}/api/rosters`).then(rosters => {
             const rosterMap = new Map(rosters.map(r => [r._id.toString(), r.name]));
             container.innerHTML = onDutyPilots.map(pilot => `
-                <div class="live-ops-item" style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <div class="live-ops-item" style="padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
                     <strong>${pilot.name} (${pilot.callsign || 'N/A'})</strong> is ON DUTY.
-                    <small style="display: block; color: #555;">Roster: ${rosterMap.get(pilot.currentRoster) || 'N/A'}</small>
+                    <small style="display: block; color: var(--dashboard-text-muted);">Roster: ${rosterMap.get(pilot.currentRoster) || 'N/A'}</small>
                 </div>
             `).join('');
         }).catch(err => {
@@ -627,10 +627,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateCommunityManagement() {
         if (!manageEventsContainer || !manageHighlightsContainer) return;
         try {
-            const events = await safeFetch(`${API_BASE_URL}/api/events`, { method: 'GET' });
+            const events = await safeFetch(`${API_BASE_URL}/api/events`);
             renderManagementList(events, manageEventsContainer, 'event');
 
-            const highlights = await safeFetch(`${API_BASE_URL}/api/highlights`, { method: 'GET' });
+            const highlights = await safeFetch(`${API_BASE_URL}/api/highlights`);
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
         } catch (error) {
             console.error('Failed to populate community management lists:', error);
@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const itemsHtml = items.map(item => `
+        container.innerHTML = items.map(item => `
             <div class="user-manage-card" data-item-id="${item._id}">
                 <div class="user-info">
                     <strong>${item.title}</strong>
@@ -658,8 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
-
-        container.innerHTML = itemsHtml;
     }
     
     // --- PILOT DATABASE & MANAGEMENT ---
@@ -667,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('pilot-db-container');
         if (!container) return;
         try {
-            const users = await safeFetch(`${API_BASE_URL}/api/users`, { method: 'GET' });
+            const users = await safeFetch(`${API_BASE_URL}/api/users`);
             const pilots = (users || []).filter(u => u.role === 'pilot' || Boolean(u.callsign));
 
             if (pilots.length === 0) {
@@ -675,21 +673,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const rows = pilots.map(p => `
-                <div class="pilot-row" data-userid="${p._id}">
-                    <div class="pilot-info">
+            container.innerHTML = pilots.map(p => `
+                <div class="user-manage-card" data-userid="${p._id}">
+                    <div class="user-info">
                         <strong>${p.name}</strong> <small>(${p.email})</small><br/>
                         <small>Rank: ${p.rank || '—'} • Hours: ${p.flightHours?.toFixed(1) ?? 0}</small>
                     </div>
-                    <div class="pilot-controls">
+                    <div class="user-controls">
                         <label>Callsign:
                             <input class="pilot-callsign-input" data-userid="${p._id}" value="${p.callsign || ''}" placeholder="e.g. INDGO-01" />
                         </label>
-                        <button class="pilot-set-callsign-btn" data-userid="${p._id}">Update Callsign</button>
+                        <button class="pilot-set-callsign-btn" data-userid="${p._id}">Update</button>
                     </div>
                 </div>
             `).join('');
-            container.innerHTML = rows;
         } catch (error) {
             console.error('Failed to load pilot database:', error);
             if (container) container.innerHTML = `<p style="color:red;">Could not load pilots: ${error.message}</p>`;
@@ -733,39 +730,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${createRankOptions(pilot.rank)}
                         </select>
                     </label>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // --- NEW: CODESHARE ROUTE MANAGEMENT ---
-    async function populateCodeshareRoutes() {
-        if (!codeshareRoutesContainer) return;
-        codeshareRoutesContainer.innerHTML = '<p>Loading codeshare routes...</p>';
-        try {
-            const routes = await safeFetch(`${API_BASE_URL}/api/codeshare-routes`);
-            renderCodeshareRoutes(routes);
-        } catch (error) {
-            codeshareRoutesContainer.innerHTML = `<p style="color: #ff5f6d;">Error loading routes: ${error.message}</p>`;
-        }
-    }
-
-    function renderCodeshareRoutes(routes) {
-        if (!codeshareRoutesContainer) return;
-        if (!routes || routes.length === 0) {
-            codeshareRoutesContainer.innerHTML = '<p>No codeshare routes found in the database. Try importing them.</p>';
-            return;
-        }
-        codeshareRoutesContainer.innerHTML = routes.map(route => `
-            <div class="codeshare-route-item">
-                <div class="route-details">
-                    <strong>${route.flightNumber}</strong> <small>by ${route.operator}</small>
-                    <div>${route.departureIcao} <span>&#8594;</span> ${route.arrivalIcao}</div>
-                </div>
-                <div class="route-info">
-                    <small>Aircraft: ${route.aircraft}</small>
-                    <small>Rank: ${route.rankUnlock}</small>
-                    <small>Time: ${route.flightTime.toFixed(1)} hrs | Distance: ${route.distance} nm</small>
                 </div>
             </div>
         `).join('');
@@ -844,7 +808,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user = result.user;
                 if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name}!`;
                 if (profileCardName) profileCardName.textContent = user.name;
-                if (profileCardBio) profileCardBio.textContent = user.bio || 'Your bio will appear here once you\'ve set it.';
                 if (user.imageUrl && profileCardPicture) {
                     profileCardPicture.src = `${user.imageUrl}?${new Date().getTime()}`;
                 }
@@ -881,10 +844,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ADD MEMBER (ADMIN) ---
+    // --- ADD MEMBER (ADMIN) (UPDATED) ---
     if (addMemberForm) {
         addMemberForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const name = document.getElementById('new-member-name').value;
             const email = document.getElementById('new-member-email').value;
             const password = document.getElementById('new-member-password').value;
             const role = document.getElementById('new-member-role').value;
@@ -893,17 +857,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (callsign === '') callsign = null;
 
             try {
-                // OPTIMIZATION: API now returns the newly created user object
                 const newUser = await safeFetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
-                    body: JSON.stringify({ email, password, role, callsign })
+                    body: JSON.stringify({ name, email, password, role, callsign })
                 });
                 showNotification('User created successfully!', 'success');
                 addMemberForm.reset();
 
-                // OPTIMIZATION: Create and append only the new user card to the list
                 const newUserCard = createUserCardElement(newUser);
-                userListContainer.prepend(newUserCard); // Use prepend to add to the top
+                userListContainer.prepend(newUserCard);
 
             } catch (error) {
                 showNotification(`Failed to create user: ${error.message}`, 'error');
@@ -925,10 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}`, { method: 'DELETE' });
                     showNotification('User deleted successfully.', 'success');
-                    
-                    // OPTIMIZATION: Remove the card from the UI instead of reloading everything
                     deleteBtn.closest('.user-manage-card').remove();
-
                 } catch (error) {
                     showNotification(`Failed to delete user: ${error.message}`, 'error');
                 }
@@ -952,9 +911,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ callsign })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
-                    
-                    // OPTIMIZATION: No need to reload the list, the change is reflected in the input.
-                    // If the pilot DB tab is already loaded, refresh it to show the change there.
                     if(dataLoaded.pilotDb) populatePilotDatabase(); 
                 } catch (error) {
                     showNotification(`Failed to set callsign: ${error.message}`, 'error');
@@ -976,15 +932,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ newRole })
                     });
                     showNotification('User role updated successfully.', 'success');
-                    
-                    // OPTIMIZATION: No need to reload, change is reflected in the select box.
-                    // Update the `defaultSelected` property for future reference if needed.
                     Array.from(select.options).forEach(opt => opt.defaultSelected = false);
                     select.querySelector(`option[value="${newRole}"]`).defaultSelected = true;
 
                 } catch (error) {
                     showNotification(`Failed to update role: ${error.message}`, 'error');
-                    // OPTIMIZATION: Revert the select box value on failure.
                     select.value = originalRole;
                 }
             }
@@ -1006,8 +958,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await safeFetch(`${API_BASE_URL}/api/${postType}s/${postId}`, { method: 'DELETE' });
                 const successMessage = `${postType.charAt(0).toUpperCase() + postType.slice(1)} deleted successfully.`;
                 showNotification(successMessage, 'success');
-                
-                // OPTIMIZATION: Remove element directly.
                 button.closest('.user-manage-card').remove();
             } catch (error) {
                 showNotification(`Failed to delete ${postType}: ${error.message}`, 'error');
@@ -1022,8 +972,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selectElement = e.target;
                 const userId = selectElement.dataset.userid;
                 const newRank = selectElement.value;
+                const originalRank = Array.from(selectElement.options).find(opt => opt.defaultSelected)?.value;
+
                 if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
-                    populatePilotManagement(); // Revert the change in the UI
+                    selectElement.value = originalRank; // Revert on cancel
                     return;
                 }
                 try {
@@ -1032,9 +984,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ newRank })
                     });
                     showNotification('Pilot rank updated successfully!', 'success');
+                     // Update default selected state
+                    Array.from(selectElement.options).forEach(opt => opt.defaultSelected = false);
+                    selectElement.querySelector(`option[value="${newRank}"]`).defaultSelected = true;
                 } catch (error) {
                     showNotification(`Failed to update rank: ${error.message}`, 'error');
-                    populatePilotManagement();
+                    selectElement.value = originalRank; // Revert on error
                 }
             }
         });
@@ -1042,7 +997,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BODY-WIDE EVENT LISTENER FOR DYNAMICALLY CREATED BUTTONS ---
     document.body.addEventListener('click', async (e) => {
-        // Pilot DB Callsign Update Button
         const pilotSetCsBtn = e.target.closest('.pilot-set-callsign-btn');
         if (pilotSetCsBtn) {
             const userId = pilotSetCsBtn.dataset.userid;
@@ -1064,24 +1018,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification(`Failed to update callsign: ${error.message}`, 'error');
             }
         }
-        
-        // NEW: Codeshare Import Button
-        const importBtn = e.target.closest('#import-codeshare-btn');
-        if (importBtn) {
-            if (!confirm('Are you sure you want to import all codeshare routes? This will replace any existing data.')) return;
-            importBtn.disabled = true;
-            importBtn.textContent = 'Importing...';
-            try {
-                const result = await safeFetch(`${API_BASE_URL}/api/codeshare/import`, { method: 'POST' });
-                showNotification(result.message, 'success');
-                populateCodeshareRoutes(); // Refresh the list
-            } catch (error) {
-                showNotification(`Import failed: ${error.message}`, 'error');
-            } finally {
-                importBtn.disabled = false;
-                importBtn.textContent = 'Import All Codeshare Routes';
-            }
-        }
     });
 
     // --- COMMUNITY CONTENT FORMS (CREATE) ---
@@ -1089,12 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (createEventForm) {
         createEventForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData();
-            formData.append('title', document.getElementById('event-title').value);
-            formData.append('date', document.getElementById('event-date').value);
-            formData.append('description', document.getElementById('event-description').value);
-            const eventImageInput = document.getElementById('event-image');
-            if (eventImageInput?.files[0]) formData.append('eventImage', eventImageInput.files[0]);
+            const formData = new FormData(createEventForm);
             try {
                 await safeFetch(`${API_BASE_URL}/api/events`, {
                     method: 'POST',
@@ -1102,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Event posted successfully!', 'success');
                 createEventForm.reset();
-                populateCommunityManagement(); // Reload is fine here as it's a less frequent action
+                populateCommunityManagement();
             } catch (error) {
                 showNotification(`Failed to post event: ${error.message}`, 'error');
             }
@@ -1113,12 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (createHighlightForm) {
         createHighlightForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData();
-            formData.append('title', document.getElementById('highlight-title').value);
-            formData.append('winnerName', document.getElementById('highlight-winner').value);
-            formData.append('description', document.getElementById('highlight-description').value);
-            const highlightImageInput = document.getElementById('highlight-image');
-            if (highlightImageInput?.files[0]) formData.append('highlightImage', highlightImageInput.files[0]);
+            const formData = new FormData(createHighlightForm);
             try {
                 await safeFetch(`${API_BASE_URL}/api/highlights`, {
                     method: 'POST',
@@ -1126,14 +1052,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Highlight posted successfully!', 'success');
                 createHighlightForm.reset();
-                populateCommunityManagement(); // Reload is fine here as it's a less frequent action
+                populateCommunityManagement();
             } catch (error) {
                 showNotification(`Failed to post highlight: ${error.message}`, 'error');
             }
         });
     }
     
-    // --- LOGOUT (MERGED) ---
+    // --- LOGOUT ---
     if(sidebarLogoutBtn) {
         sidebarLogoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1142,16 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- MOBILE MENU ---
-    const hamburger = document.querySelector('.hamburger-menu');
-    const navMenu = document.querySelector('.nav-menu');
-    if (hamburger && navMenu) {
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
-        });
-    }
-
     // --- INITIALIZATION ---
     attachTabListeners();
     fetchUserData();
