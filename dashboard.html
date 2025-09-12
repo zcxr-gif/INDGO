@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard - INDGO AIR Virtual</title>
     <link rel="stylesheet" href="dashboard.css">
@@ -34,6 +34,7 @@
                     <li id="community-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-community"><i class="fas fa-users"></i> Community</a></li>
                     <li id="admin-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-admin"><i class="fas fa-user-shield"></i> Admin Tools</a></li>
                     <li id="pilot-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilots"><i class="fas fa-database"></i> Pilot Database</a></li>
+                    <li id="codeshare-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-codeshare"><i class="fas fa-route"></i> Codeshare Routes</a></li>
                 </ul>
             </nav>
 
@@ -280,6 +281,22 @@
                     <p>Loading pilots...</p>
                 </div>
             </div>
+
+            <div id="tab-codeshare" class="content-card">
+                <h2><i class="fas fa-route"></i> Codeshare Route Database</h2>
+                <p>View all available codeshare routes. Staff with 'Route Manager' or 'Admin' roles can import the latest routes from the master Google Sheet.</p>
+                
+                <div id="import-codeshare-panel" style="display: none; background: var(--secondary-bg); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 2rem;">
+                    <h3>Import Routes</h3>
+                    <p>Click the button below to clear the existing codeshare database and import the latest routes from all sheets in the configured Google Sheet.</p>
+                    <button id="import-codeshare-btn" class="cta-button">Import All Codeshare Routes</button>
+                </div>
+                
+                <div id="codeshare-routes-container">
+                    <p>Loading codeshare routes...</p>
+                </div>
+            </div>
+
         </main>
     </div>
     

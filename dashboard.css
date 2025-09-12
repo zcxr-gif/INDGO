@@ -117,13 +117,35 @@ body {
 
 /* --- Original Dashboard-Specific Styles --- */
 .dashboard-form { max-width: 700px; }
-.pirep-review-card, .user-manage-card, .log-entry {
+.pirep-review-card, .user-manage-card, .log-entry, .codeshare-route-item {
     background-color: var(--secondary-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 1rem;
     padding: 1.5rem;
 }
+/* NEW: Styles for codeshare route items */
+.codeshare-route-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.codeshare-route-item .route-details, .codeshare-route-item .route-info {
+    flex: 1 1 250px; /* Allow items to wrap on smaller screens */
+}
+.codeshare-route-item .route-details strong {
+    font-size: 1.1rem;
+    color: #fff;
+}
+.codeshare-route-item .route-details span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--dashboard-text-muted);
+}
+.codeshare-route-item small { display: block; color: var(--dashboard-text-muted); }
+
 .user-manage-card { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }

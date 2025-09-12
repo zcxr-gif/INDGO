@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileForm = document.getElementById('profile-form');
     const passwordForm = document.getElementById('password-form');
     const addMemberForm = document.getElementById('add-member-form');
-    const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn'); // Corrected logout button ID
+    const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn');
 
     // --- TAB LINKS ---
     const adminTabLink = document.getElementById('admin-tab-link');
@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pirepTabLink = document.getElementById('pirep-tab-link');
     const rosterTabLink = document.getElementById('roster-tab-link');
     const pilotTabLink = document.getElementById('pilot-tab-link');
+    const codeshareTabLink = document.getElementById('codeshare-tab-link'); // NEW
 
     // --- PROFILE CARD ELEMENTS ---
     const profileCardPicture = document.getElementById('profile-card-picture');
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
     const pendingPirepsContainer = document.getElementById('pending-pireps-container');
     const rosterManagementContainer = document.getElementById('tab-roster-management');
+    const codeshareRoutesContainer = document.getElementById('codeshare-routes-container'); // NEW
     
     // --- APP STATE & CONFIG ---
     const token = localStorage.getItem('authToken');
@@ -58,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         community: false,
         pilotManagement: false,
         pilotDb: false,
+        codeshare: false, // NEW
     };
 
     if (!token) {
@@ -166,6 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const routeManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Route Manager (RM)'];
             if (routeManagerRoles.includes(user.role)) {
                 showTab(rosterTabLink);
+                showTab(codeshareTabLink); // NEW: Show codeshare tab for Route Managers
+                const importPanel = document.getElementById('import-codeshare-panel');
+                if (importPanel) importPanel.style.display = 'block'; // NEW: Show import button panel
             }
             
         } catch (error) {
@@ -490,6 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     populateCommunityManagement();
                     dataLoaded.community = true;
                 }
+                // NEW: Load codeshare data
+                if (viewId === 'tab-codeshare' && !dataLoaded.codeshare) {
+                    populateCodeshareRoutes();
+                    dataLoaded.codeshare = true;
+                }
             });
         });
     }
@@ -722,6 +733,39 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${createRankOptions(pilot.rank)}
                         </select>
                     </label>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- NEW: CODESHARE ROUTE MANAGEMENT ---
+    async function populateCodeshareRoutes() {
+        if (!codeshareRoutesContainer) return;
+        codeshareRoutesContainer.innerHTML = '<p>Loading codeshare routes...</p>';
+        try {
+            const routes = await safeFetch(`${API_BASE_URL}/api/codeshare-routes`);
+            renderCodeshareRoutes(routes);
+        } catch (error) {
+            codeshareRoutesContainer.innerHTML = `<p style="color: #ff5f6d;">Error loading routes: ${error.message}</p>`;
+        }
+    }
+
+    function renderCodeshareRoutes(routes) {
+        if (!codeshareRoutesContainer) return;
+        if (!routes || routes.length === 0) {
+            codeshareRoutesContainer.innerHTML = '<p>No codeshare routes found in the database. Try importing them.</p>';
+            return;
+        }
+        codeshareRoutesContainer.innerHTML = routes.map(route => `
+            <div class="codeshare-route-item">
+                <div class="route-details">
+                    <strong>${route.flightNumber}</strong> <small>by ${route.operator}</small>
+                    <div>${route.departureIcao} <span>&#8594;</span> ${route.arrivalIcao}</div>
+                </div>
+                <div class="route-info">
+                    <small>Aircraft: ${route.aircraft}</small>
+                    <small>Rank: ${route.rankUnlock}</small>
+                    <small>Time: ${route.flightTime.toFixed(1)} hrs | Distance: ${route.distance} nm</small>
                 </div>
             </div>
         `).join('');
@@ -996,27 +1040,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- BODY-WIDE EVENT LISTENER FOR DYNAMICALLY CREATED BUTTONS ---
     document.body.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.pilot-set-callsign-btn');
-        if (!btn) return;
-        const userId = btn.dataset.userid;
-        const input = document.querySelector(`.pilot-callsign-input[data-userid="${userId}"]`);
-        if (!input) return;
-        const callsign = input.value.trim().toUpperCase();
-        if (!callsign) {
-            showNotification('Please enter a callsign before updating.', 'error');
-            return;
+        // Pilot DB Callsign Update Button
+        const pilotSetCsBtn = e.target.closest('.pilot-set-callsign-btn');
+        if (pilotSetCsBtn) {
+            const userId = pilotSetCsBtn.dataset.userid;
+            const input = document.querySelector(`.pilot-callsign-input[data-userid="${userId}"]`);
+            if (!input) return;
+            const callsign = input.value.trim().toUpperCase();
+            if (!callsign) {
+                showNotification('Please enter a callsign before updating.', 'error');
+                return;
+            }
+            try {
+                await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ callsign })
+                });
+                showNotification('Callsign updated successfully.', 'success');
+                if(dataLoaded.admin) populateAdminTools();
+            } catch (error) {
+                showNotification(`Failed to update callsign: ${error.message}`, 'error');
+            }
         }
-        try {
-            await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
-                method: 'PUT',
-                body: JSON.stringify({ callsign })
-            });
-            showNotification('Callsign updated successfully.', 'success');
-            // OPTIMIZATION: Refresh admin tools list if it's already loaded
-            if(dataLoaded.admin) populateAdminTools();
-        } catch (error) {
-            showNotification(`Failed to update callsign: ${error.message}`, 'error');
+        
+        // NEW: Codeshare Import Button
+        const importBtn = e.target.closest('#import-codeshare-btn');
+        if (importBtn) {
+            if (!confirm('Are you sure you want to import all codeshare routes? This will replace any existing data.')) return;
+            importBtn.disabled = true;
+            importBtn.textContent = 'Importing...';
+            try {
+                const result = await safeFetch(`${API_BASE_URL}/api/codeshare/import`, { method: 'POST' });
+                showNotification(result.message, 'success');
+                populateCodeshareRoutes(); // Refresh the list
+            } catch (error) {
+                showNotification(`Import failed: ${error.message}`, 'error');
+            } finally {
+                importBtn.disabled = false;
+                importBtn.textContent = 'Import All Codeshare Routes';
+            }
         }
     });
 
