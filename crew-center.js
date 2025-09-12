@@ -190,12 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // NEW: Fetches and displays available rosters in the list
     const fetchAndDisplayRosters = async () => {
-        const container = document.getElementById('roster-list-container');
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/rosters`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Could not fetch rosters.');
+    const container = document.getElementById('roster-list-container');
+    try {
+        // The backend now handles the logic of which rosters to send based on your location!
+        const response = await fetch(`${API_BASE_URL}/api/rosters`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Could not fetch available rosters for your location.');
 
             const rosters = await response.json();
 
