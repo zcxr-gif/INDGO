@@ -10,8 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
     const pilotNameElem = document.getElementById('pilot-name');
     const pilotCallsignElem = document.getElementById('pilot-callsign');
-    const pilotRankElem = document.getElementById('pilot-rank');
-    const flightHoursElem = document.getElementById('flight-hours');
     const profilePictureElem = document.getElementById('profile-picture');
     const logoutButton = document.getElementById('logout-button');
     const mainContentContainer = document.querySelector('.main-content');
@@ -59,8 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Populate sidebar profile (always visible)
             pilotNameElem.textContent = pilot.name || 'N/A';
             pilotCallsignElem.textContent = pilot.callsign || 'N/A';
-            pilotRankElem.textContent = pilot.rank || 'N/A';
-            flightHoursElem.textContent = (pilot.flightHours || 0).toFixed(1);
             profilePictureElem.src = pilot.imageUrl || 'images/default-avatar.png';
 
             // Render the content views based on duty status
@@ -72,26 +68,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Helper function to create stats card ---
+    const createStatsCardHTML = (pilot) => {
+        return `
+        <div class="content-card">
+            <h2><i class="fa-solid fa-chart-line"></i> Pilot Stats</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <strong>Rank</strong>
+                    <span>${pilot.rank || '---'}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>Flight Hours</strong>
+                    <span>${(pilot.flightHours || 0).toFixed(1)}</span>
+                </div>
+            </div>
+        </div>
+        `;
+    };
+
     // --- UI Rendering Logic ---
     const renderAllViews = async (pilot) => {
         if (pilot.dutyStatus === 'ON_DUTY') {
             await renderOnDutyViews(pilot);
         } else {
-            await renderOnRestViews();
+            await renderOnRestViews(pilot); // Pass pilot data
         }
         await fetchAndDisplayRosters();
         await fetchPirepHistory();
     };
 
-    const renderOnRestViews = async () => {
+    const renderOnRestViews = async (pilot) => { // Accept pilot data
         const dutyStatusView = document.getElementById('view-duty-status');
         const filePirepView = document.getElementById('view-file-pirep');
         
+        // Render duty status and stats card
         dutyStatusView.innerHTML = `
             <div class="content-card">
                 <h2><i class="fa-solid fa-plane-departure"></i> Duty Status: 🔴 On Rest</h2>
                 <p>You are currently on crew rest. To begin your next duty, please select an available flight roster from the Sector Ops page.</p>
-            </div>`;
+            </div>
+            ${createStatsCardHTML(pilot)}`; // Add stats card HTML
 
         filePirepView.innerHTML = `
             <div class="content-card">
