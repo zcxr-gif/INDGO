@@ -1,7 +1,8 @@
 /* --- CSS Variables & Global Styles (Inspired by crew-center.css) --- */
 :root {
     --bg-color: #0d101c;
-    --primary-glass: rgba(26, 35, 63, 0.5);
+    /* OPTIMIZATION: Increased opacity for a clearer background without the expensive blur filter */
+    --primary-glass: rgba(26, 35, 63, 0.75); 
     --border-color: rgba(0, 27, 148, 0.25);
     --accent-color: #001B94;
     --glow-color: rgba(0, 27, 148, 0.75);
@@ -33,12 +34,13 @@ body {
 /* --- Sidebar (Adapted from crew-center.css) --- */
 .sidebar {
     width: 260px;
-    background-color: var(--secondary-bg);
+    background-color: var(--primary-glass); /* Changed from secondary-bg for consistency */
     border-right: 1px solid var(--border-color);
     display: flex; /* Critical for footer positioning */
     flex-direction: column; /* Critical for footer positioning */
     padding: 1.5rem 1rem;
-    backdrop-filter: blur(10px);
+    /* OPTIMIZATION: backdrop-filter is extremely performance-intensive and was a primary cause of lag. It has been removed. */
+    /* backdrop-filter: blur(10px); */
     transition: width 0.3s ease;
 }
 .sidebar-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; padding: 0 0.5rem; }
@@ -80,7 +82,8 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 2rem;
-    backdrop-filter: blur(10px);
+    /* OPTIMIZATION: backdrop-filter is extremely performance-intensive and was a primary cause of lag. It has been removed. */
+    /* backdrop-filter: blur(10px); */
     animation: fadeIn 0.5s ease-in-out;
 }
 .content-card.active { display: block; }

@@ -351,11 +351,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 try {
-                    await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
+                    // OPTIMIZATION: API now returns the new roster object
+                    const newRoster = await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
                     showNotification('Roster created successfully!', 'success');
                     e.target.reset();
                     if(legsContainer) legsContainer.innerHTML = `<div class="roster-leg-input" style="display: flex; gap: 10px; margin-bottom: 10px;"><input type="text" placeholder="Flight #" required><input type="text" placeholder="Departure ICAO" required maxlength="4"><input type="text" placeholder="Arrival ICAO" required maxlength="4"></div>`;
-                    loadAndRenderRosters();
+                    
+                    // OPTIMIZATION: Append the new roster directly instead of reloading the whole list
+                    const rosterContainer = document.getElementById('manage-rosters-container');
+                    const rosterElement = createRosterCardElement(newRoster);
+                    rosterContainer.prepend(rosterElement); // prepend to show at top
+
                 } catch (error) {
                     showNotification(`Error creating roster: ${error.message}`, 'error');
                 }
@@ -372,21 +378,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '<p>No rosters have been created yet.</p>';
                 return;
             }
-            container.innerHTML = rosters.map(roster => `
-                <div class="user-manage-card">
-                    <div class="user-info">
-                        <strong>${roster.name} ${roster.isGenerated ? ' <small>(Auto)</small>' : ''}</strong> (${roster.hub})
-                        <small>${roster.legs.length} legs, ${roster.totalFlightTime.toFixed(1)} hrs</small>
-                    </div>
-                    <div class="user-controls">
-                        <button class="delete-user-btn delete-roster-btn" data-id="${roster._id}" data-name="${roster.name}"><i class="fas fa-trash-alt"></i> Delete</button>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = ''; // Clear container
+            rosters.forEach(roster => {
+                const rosterElement = createRosterCardElement(roster);
+                container.appendChild(rosterElement);
+            });
         } catch (error) {
             container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
         }
     }
+    
+    // OPTIMIZATION HELPER: Creates a single roster card element
+    function createRosterCardElement(roster) {
+        const card = document.createElement('div');
+        card.className = 'user-manage-card';
+        card.setAttribute('data-rosterid', roster._id);
+        card.innerHTML = `
+            <div class="user-info">
+                <strong>${roster.name} ${roster.isGenerated ? ' <small>(Auto)</small>' : ''}</strong> (${roster.hub})
+                <small>${roster.legs.length} legs, ${roster.totalFlightTime.toFixed(1)} hrs</small>
+            </div>
+            <div class="user-controls">
+                <button class="delete-user-btn delete-roster-btn" data-id="${roster._id}" data-name="${roster.name}"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
+        `;
+        return card;
+    }
+
 
     if (rosterManagementContainer) {
         rosterManagementContainer.addEventListener('click', async e => {
@@ -400,7 +418,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
                         showNotification('Roster deleted successfully.', 'success');
-                        loadAndRenderRosters();
+                        
+                        // OPTIMIZATION: Remove the element directly from the DOM
+                        deleteButton.closest('.user-manage-card').remove();
                     } catch (error) {
                         showNotification(`Error deleting roster: ${error.message}`, 'error');
                     }
@@ -415,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
                     showNotification(result.message, 'success');
-                    loadAndRenderRosters(); 
+                    loadAndRenderRosters(); // Full refresh is appropriate here as many items change
                 } catch (error) {
                     showNotification(`Generation failed: ${error.message}`, 'error');
                 } finally {
@@ -489,53 +509,61 @@ document.addEventListener('DOMContentLoaded', () => {
             if (logContainer) logContainer.innerHTML = '<p style="color: red;">Could not load logs.</p>';
         }
     }
+    
+    // OPTIMIZATION HELPER: Creates role dropdown options
+    const createRoleOptions = (selectedRole) => {
+        let optionsHtml = '';
+        for (const group in allRoles) {
+            optionsHtml += `<optgroup label="${group}">`;
+            allRoles[group].forEach(role => {
+                const selected = role === selectedRole ? 'selected' : '';
+                optionsHtml += `<option value="${role}" ${selected}>${role}</option>`;
+            });
+            optionsHtml += `</optgroup>`;
+        }
+        return optionsHtml;
+    };
+
+    // OPTIMIZATION HELPER: Creates a single user card element
+    function createUserCardElement(user) {
+        const isCurrentUser = user._id === currentUserId;
+        const controlsDisabled = isCurrentUser ? 'disabled' : '';
+
+        const card = document.createElement('div');
+        card.className = 'user-manage-card';
+        card.setAttribute('data-userid', user._id);
+
+        card.innerHTML = `
+            <div class="user-info">
+                <strong>${user.name}</strong>
+                <small>${user.email}</small>
+                <div><small>Rank: ${user.rank || '—'} • Hours: ${user.flightHours?.toFixed(1) ?? 0}</small></div>
+            </div>
+            <div class="user-controls">
+                <label style="display:block;font-size:0.8rem;margin-bottom:6px;">
+                    Callsign:
+                    <input type="text" class="callsign-input" data-userid="${user._id}" value="${user.callsign || ''}" ${isCurrentUser ? 'readonly' : ''} placeholder="e.g. INDGO-01" style="margin-left:6px"/>
+                    <button type="button" class="set-callsign-btn" data-userid="${user._id}" ${controlsDisabled}>Set</button>
+                </label>
+                <select class="role-select" data-userid="${user._id}" ${controlsDisabled}>
+                    ${createRoleOptions(user.role)}
+                </select>
+                <button type="button" class="delete-user-btn" data-userid="${user._id}" data-username="${user.name}" ${controlsDisabled}>
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        `;
+        return card;
+    }
+
 
     function renderUserList(users) {
         if (!userListContainer) return;
-        userListContainer.innerHTML = '';
-
-        const createRoleOptions = (selectedRole) => {
-            let optionsHtml = '';
-            for (const group in allRoles) {
-                optionsHtml += `<optgroup label="${group}">`;
-                allRoles[group].forEach(role => {
-                    const selected = role === selectedRole ? 'selected' : '';
-                    optionsHtml += `<option value="${role}" ${selected}>${role}</option>`;
-                });
-                optionsHtml += `</optgroup>`;
-            }
-            return optionsHtml;
-        };
-
-        const userCards = users.map(user => {
-            const isCurrentUser = user._id === currentUserId;
-            const controlsDisabled = isCurrentUser ? 'disabled' : '';
-
-            return `
-                <div class="user-manage-card" data-userid="${user._id}">
-                    <div class="user-info">
-                        <strong>${user.name}</strong>
-                        <small>${user.email}</small>
-                        <div><small>Rank: ${user.rank || '—'} • Hours: ${user.flightHours?.toFixed(1) ?? 0}</small></div>
-                    </div>
-                    <div class="user-controls">
-                        <label style="display:block;font-size:0.8rem;margin-bottom:6px;">
-                            Callsign:
-                            <input type="text" class="callsign-input" data-userid="${user._id}" value="${user.callsign || ''}" ${isCurrentUser ? 'readonly' : ''} placeholder="e.g. INDGO-01" style="margin-left:6px"/>
-                            <button type="button" class="set-callsign-btn" data-userid="${user._id}" ${controlsDisabled}>Set</button>
-                        </label>
-                        <select class="role-select" data-userid="${user._id}" ${controlsDisabled}>
-                            ${createRoleOptions(user.role)}
-                        </select>
-                        <button type="button" class="delete-user-btn" data-userid="${user._id}" data-username="${user.name}" ${controlsDisabled}>
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        userListContainer.innerHTML = userCards;
+        userListContainer.innerHTML = ''; // Clear existing content
+        users.forEach(user => {
+            const userCardElement = createUserCardElement(user);
+            userListContainer.appendChild(userCardElement);
+        });
     }
 
     function renderLogList(logs) {
@@ -607,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const itemsHtml = items.map(item => `
-            <div class="user-manage-card">
+            <div class="user-manage-card" data-item-id="${item._id}">
                 <div class="user-info">
                     <strong>${item.title}</strong>
                     <small>${type === 'event' ? new Date(item.date).toLocaleDateString() : `Winner: ${item.winnerName}`}</small>
@@ -821,13 +849,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (callsign === '') callsign = null;
 
             try {
-                await safeFetch(`${API_BASE_URL}/api/users`, {
+                // OPTIMIZATION: API now returns the newly created user object
+                const newUser = await safeFetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
                     body: JSON.stringify({ email, password, role, callsign })
                 });
                 showNotification('User created successfully!', 'success');
                 addMemberForm.reset();
-                populateAdminTools(); // Refresh user list
+
+                // OPTIMIZATION: Create and append only the new user card to the list
+                const newUserCard = createUserCardElement(newUser);
+                userListContainer.prepend(newUserCard); // Use prepend to add to the top
+
             } catch (error) {
                 showNotification(`Failed to create user: ${error.message}`, 'error');
             }
@@ -843,12 +876,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const userId = deleteBtn.dataset.userid;
                 const userName = deleteBtn.dataset.username;
-                if (!userId) return;
-                if (!confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) return;
+                if (!userId || !confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) return;
+                
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}`, { method: 'DELETE' });
                     showNotification('User deleted successfully.', 'success');
-                    populateAdminTools();
+                    
+                    // OPTIMIZATION: Remove the card from the UI instead of reloading everything
+                    deleteBtn.closest('.user-manage-card').remove();
+
                 } catch (error) {
                     showNotification(`Failed to delete user: ${error.message}`, 'error');
                 }
@@ -872,9 +908,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ callsign })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
-                    // Refresh data in both admin and pilot tabs
-                    populateAdminTools();
-                    if(dataLoaded.pilotDb) populatePilotDatabase();
+                    
+                    // OPTIMIZATION: No need to reload the list, the change is reflected in the input.
+                    // If the pilot DB tab is already loaded, refresh it to show the change there.
+                    if(dataLoaded.pilotDb) populatePilotDatabase(); 
                 } catch (error) {
                     showNotification(`Failed to set callsign: ${error.message}`, 'error');
                 }
@@ -887,16 +924,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const select = e.target;
                 const userId = select.dataset.userid;
                 const newRole = select.value;
+                const originalRole = Array.from(select.options).find(opt => opt.defaultSelected)?.value || select.options[0].value;
+                
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
                         method: 'PUT',
                         body: JSON.stringify({ newRole })
                     });
                     showNotification('User role updated successfully.', 'success');
-                    populateAdminTools();
+                    
+                    // OPTIMIZATION: No need to reload, change is reflected in the select box.
+                    // Update the `defaultSelected` property for future reference if needed.
+                    Array.from(select.options).forEach(opt => opt.defaultSelected = false);
+                    select.querySelector(`option[value="${newRole}"]`).defaultSelected = true;
+
                 } catch (error) {
                     showNotification(`Failed to update role: ${error.message}`, 'error');
-                    populateAdminTools(); // Refresh to show original value
+                    // OPTIMIZATION: Revert the select box value on failure.
+                    select.value = originalRole;
                 }
             }
         });
@@ -917,7 +962,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await safeFetch(`${API_BASE_URL}/api/${postType}s/${postId}`, { method: 'DELETE' });
                 const successMessage = `${postType.charAt(0).toUpperCase() + postType.slice(1)} deleted successfully.`;
                 showNotification(successMessage, 'success');
-                populateCommunityManagement();
+                
+                // OPTIMIZATION: Remove element directly.
+                button.closest('.user-manage-card').remove();
             } catch (error) {
                 showNotification(`Failed to delete ${postType}: ${error.message}`, 'error');
             }
@@ -966,9 +1013,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ callsign })
             });
             showNotification('Callsign updated successfully.', 'success');
-            // Refresh data in both admin and pilot tabs
+            // OPTIMIZATION: Refresh admin tools list if it's already loaded
             if(dataLoaded.admin) populateAdminTools();
-            populatePilotDatabase();
         } catch (error) {
             showNotification(`Failed to update callsign: ${error.message}`, 'error');
         }
@@ -992,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Event posted successfully!', 'success');
                 createEventForm.reset();
-                populateCommunityManagement();
+                populateCommunityManagement(); // Reload is fine here as it's a less frequent action
             } catch (error) {
                 showNotification(`Failed to post event: ${error.message}`, 'error');
             }
@@ -1016,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Highlight posted successfully!', 'success');
                 createHighlightForm.reset();
-                populateCommunityManagement();
+                populateCommunityManagement(); // Reload is fine here as it's a less frequent action
             } catch (error) {
                 showNotification(`Failed to post highlight: ${error.message}`, 'error');
             }
