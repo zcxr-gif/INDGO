@@ -1,4 +1,3 @@
-<script>
 // Crew Center – Rank-aware UI + nicer Sector Ops + gated PIREP aircraft chooser
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
@@ -555,4 +554,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial load
     fetchPilotData();
 });
-</script>
