@@ -208,6 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (criteria.searched.length > 0) {
                 header.innerHTML = `Showing rosters based on your location at: <strong>${criteria.searched.join(' & ')}</strong>`;
+                 // --- MAP INTEGRATION (ADDED) ---
+                if (window.plotRosters) {
+                    window.plotRosters(criteria.searched[0], rosters);
+                }
             } else {
                  header.innerHTML = 'No location data found. Showing rosters from primary hubs.';
             }
@@ -340,7 +344,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const detailsPanel = document.getElementById(`details-${rosterId}`);
             if (detailsPanel) {
                 detailsPanel.classList.toggle('visible');
-                e.target.textContent = detailsPanel.classList.contains('visible') ? 'Hide' : 'Details';
+                const isVisible = detailsPanel.classList.contains('visible');
+                e.target.textContent = isVisible ? 'Hide' : 'Details';
+                
+                // --- MAP INTEGRATION (ADDED) ---
+                if (isVisible) {
+                    window.highlightRoster(rosterId);
+                } else {
+                    window.resetHighlights();
+                }
             }
         }
     
