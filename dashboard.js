@@ -462,15 +462,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    async function loadAndRenderRosters() {
-        const container = document.getElementById('manage-rosters-container');
-        try {
-            const rosters = await safeFetch(`${API_BASE_URL}/api/rosters`);
-            renderList(container, rosters, createRosterCardElement, 'No rosters have been created yet.');
-        } catch (error) {
-            if (container) container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
-        }
+    aasync function loadAndRenderRosters(fetchAll = false) { // Add the fetchAll parameter
+    const container = document.getElementById('manage-rosters-container');
+    try {
+        // Build the URL based on the fetchAll flag
+        const url = fetchAll 
+            ? `${API_BASE_URL}/api/rosters?all=true` 
+            : `${API_BASE_URL}/api/rosters`;
+
+        const rosters = await safeFetch(url);
+        renderList(container, rosters, createRosterCardElement, 'No rosters have been created yet.');
+    } catch (error) {
+        if (container) container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
     }
+}
 
     function createRosterCardElement(roster) {
         const card = document.createElement('div');
@@ -520,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'POST'
                     });
                     showNotification(result.message, 'success');
-                    loadAndRenderRosters();
+                    loadAndRenderRosters(true);
                 } catch (error) {
                     showNotification(`Generation failed: ${error.message}`, 'error');
                 } finally {
