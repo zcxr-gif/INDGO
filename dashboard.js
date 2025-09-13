@@ -980,7 +980,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const select = e.target;
                 const userId = select.dataset.userid;
                 const newRole = select.value;
-                const originalRole = Array.from(select.options).find(opt => opt.defaultSelected) ? .value || select.options[0].value;
+                const originalRole = Array.from(select.options).find(opt => opt.defaultSelected)?.value || select.options[0].value;
+
+
 
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
@@ -1032,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selectElement = e.target;
                 const userId = selectElement.dataset.userid;
                 const newRank = selectElement.value;
-                const originalRank = Array.from(selectElement.options).find(opt => opt.defaultSelected) ? .value;
+                const originalRank = Array.from(selectElement.options).find(opt => opt.defaultSelected)?.value;
 
                 if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
                     selectElement.value = originalRank; // Revert on cancel
