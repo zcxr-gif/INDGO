@@ -177,8 +177,8 @@ body {
 }
 
 /* --- Main Content & Tab Panes (Adapted for Dashboard) --- */
-.content-card { 
-    display: none; 
+.main-content > .content-card { 
+    display: none;  
     background: var(--primary-glass);
     border: 1px solid var(--border-color);
     border-radius: 10px;
