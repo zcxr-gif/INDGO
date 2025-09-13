@@ -159,6 +159,10 @@
                     <h3>Add New Team Member</h3>
                     <form id="add-member-form" class="dashboard-form">
                          <div class="form-group">
+                            <label for="new-member-name">Full Name</label>
+                            <input type="text" id="new-member-name" required>
+                        </div>
+                         <div class="form-group">
                             <label for="new-member-email">Email Address</label>
                             <input type="email" id="new-member-email" required>
                         </div>
@@ -215,19 +219,19 @@
                     <form id="create-event-form" class="dashboard-form">
                         <div class="form-group">
                             <label for="event-title">Event Title</label>
-                            <input type="text" id="event-title" required>
+                            <input type="text" id="event-title" name="title" required>
                         </div>
                         <div class="form-group">
                             <label for="event-date">Event Date & Time</label>
-                            <input type="datetime-local" id="event-date" required>
+                            <input type="datetime-local" id="event-date" name="date" required>
                         </div>
                         <div class="form-group">
                             <label for="event-description">Description</label>
-                            <textarea id="event-description" rows="4" required></textarea>
+                            <textarea id="event-description" name="description" rows="4" required></textarea>
                         </div>
                         <div class="form-group">
                             <label for="event-image">Event Image</label>
-                            <input type="file" id="event-image" accept="image/*">
+                            <input type="file" id="event-image" name="eventImage" accept="image/*">
                         </div>
                         <button type="submit" class="cta-button">Post Event</button>
                     </form>
@@ -238,19 +242,19 @@
                     <form id="create-highlight-form" class="dashboard-form">
                         <div class="form-group">
                             <label for="highlight-title">Highlight Title (e.g., Best Picture of the Week)</label>
-                            <input type="text" id="highlight-title" required>
+                            <input type="text" id="highlight-title" name="title" required>
                         </div>
                         <div class="form-group">
                             <label for="highlight-winner">Winner / Pilot Name</label>
-                            <input type="text" id="highlight-winner" required>
+                            <input type="text" id="highlight-winner" name="winnerName" required>
                         </div>
                         <div class="form-group">
                             <label for="highlight-description">Brief Description</label>
-                            <textarea id="highlight-description" rows="3"></textarea>
+                            <textarea id="highlight-description" name="description" rows="3"></textarea>
                         </div>
                         <div class="form-group">
                             <label for="highlight-image">Winning Picture/Screenshot</label>
-                            <input type="file" id="highlight-image" accept="image/*" required>
+                            <input type="file" id="highlight-image" name="highlightImage" accept="image/*" required>
                         </div>
                         <button type="submit" class="cta-button">Post Highlight</button>
                     </form>
