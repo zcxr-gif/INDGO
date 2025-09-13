@@ -189,7 +189,6 @@ body {
 .content-card.active { 
     display: block; 
     animation: fadeIn 0.5s ease-in-out;
-    backdrop-filter: blur(10px);
 }
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(10px); } 
