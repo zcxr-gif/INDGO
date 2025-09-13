@@ -1,21 +1,52 @@
 document.addEventListener('DOMContentLoaded', () => {
     let map;
     let airportsData;
-    const rosterLayers = {}; // To store layers (polylines) for each roster
-    
-    // Define styles for the routes
-    const defaultStyle = { color: '#8a93a2', weight: 2, opacity: 0.6, dashArray: '5, 10' };
-    const highlightStyle = { color: '#0055ff', weight: 4, opacity: 1 };
+    const rosterLayers = {}; // To store layers (lines, markers) for each roster
+    const allAirportMarkers = {}; // Global store to avoid duplicate airport markers {icao: marker}
 
-    // Initialize the map once
+    // --- NEW: Define styles for map elements ---
+    const defaultLineStyle = { color: '#5a6a9c', weight: 2, opacity: 0.7 };
+    const highlightLineStyle = { color: '#FFA500', weight: 3, opacity: 1 }; // Orange
+
+    const defaultAirportStyle = {
+        radius: 4,
+        fillColor: "#00BFFF", // Deep Sky Blue
+        color: "#fff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+    };
+    const highlightAirportStyle = {
+        radius: 6,
+        fillColor: "#FFA500", // Orange
+        color: "#fff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 1
+    };
+
+    // MODIFIED: Initialize the map with boundaries
     function initializeMap() {
         if (map) return;
-        map = L.map('map').setView([20, 0], 2);
+        map = L.map('map', {
+            worldCopyJump: true // Ensures smooth panning across the date line
+        }).setView([20, 0], 2);
+
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
-            maxZoom: 20
+            maxZoom: 20,
+            minZoom: 2 // Prevent zooming out too far
         }).addTo(map);
+
+        // Set map boundaries to prevent endless panning
+        const southWest = L.latLng(-85, -180);
+        const northEast = L.latLng(85, 180);
+        const bounds = L.latLngBounds(southWest, northEast);
+        map.setMaxBounds(bounds);
+        map.on('drag', function() {
+            map.panInsideBounds(bounds, { animate: false });
+        });
     }
 
     // Load airport data from the API
@@ -30,17 +61,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to clear all previously plotted routes
+    // MODIFIED: Function to clear all previously plotted routes and markers
     function clearAllRosterLayers() {
-        Object.values(rosterLayers).forEach(layers => {
-            layers.forEach(layer => map.removeLayer(layer));
+        Object.values(rosterLayers).forEach(data => {
+            data.polylines.forEach(polyline => map.removeLayer(polyline));
         });
-        for (const key in rosterLayers) {
-            delete rosterLayers[key];
-        }
+        Object.values(allAirportMarkers).forEach(marker => map.removeLayer(marker));
+
+        for (const key in rosterLayers) { delete rosterLayers[key]; }
+        for (const key in allAirportMarkers) { delete allAirportMarkers[key]; }
     }
 
-    // Main function to plot all available rosters
+    // MODIFIED: Main function to plot all available rosters
     window.plotRosters = async function(pilotLocation, rosters) {
         initializeMap();
         clearAllRosterLayers();
@@ -51,28 +83,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const plottedAirports = new Set(); // To avoid duplicate airport markers
-
         rosters.forEach(roster => {
-            rosterLayers[roster._id] = [];
+            // Initialize storage for this roster's layers
+            rosterLayers[roster._id] = { polylines: [], airportMarkers: [] };
+
+            const rosterUniqueIcaos = new Set();
+
+            // First, create the polylines for each leg
             roster.legs.forEach(leg => {
+                rosterUniqueIcaos.add(leg.departure);
+                rosterUniqueIcaos.add(leg.arrival);
+
                 const dep = airportsData[leg.departure];
                 const arr = airportsData[leg.arrival];
 
                 if (dep && arr) {
                     const latlngs = [[dep.lat, dep.lon], [arr.lat, arr.lon]];
-                    const polyline = L.polyline(latlngs, defaultStyle).addTo(map);
-                    rosterLayers[roster._id].push(polyline);
+                    const polyline = L.polyline(latlngs, defaultLineStyle).addTo(map);
+                    rosterLayers[roster._id].polylines.push(polyline);
+                }
+            });
 
-                    // Add markers for airports if not already added
-                    [dep, arr].forEach(airport => {
-                        if (!plottedAirports.has(airport.icao)) {
-                            L.marker([airport.lat, airport.lon])
-                                .addTo(map)
-                                .bindPopup(`<b>${airport.icao}</b><br>${airport.name}`);
-                            plottedAirports.add(airport.icao);
-                        }
-                    });
+            // Next, create and associate airport markers
+            rosterUniqueIcaos.forEach(icao => {
+                const airport = airportsData[icao];
+                if (airport) {
+                    let marker;
+                    // If marker doesn't exist globally, create it
+                    if (!allAirportMarkers[icao]) {
+                        marker = L.circleMarker([airport.lat, airport.lon], defaultAirportStyle)
+                            .addTo(map)
+                            .bindPopup(`<b>${airport.icao}</b><br>${airport.name}`);
+                        allAirportMarkers[icao] = marker;
+                    }
+                    // Add the marker (new or existing) to this roster's data
+                    marker = allAirportMarkers[icao];
+                    rosterLayers[roster._id].airportMarkers.push(marker);
                 }
             });
         });
@@ -84,27 +130,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Resets all routes to the default style
+    // MODIFIED: Resets all routes and airports to the default style
     window.resetHighlights = function() {
-        Object.values(rosterLayers).forEach(layers => {
-            layers.forEach(polyline => polyline.setStyle(defaultStyle));
+        Object.values(rosterLayers).forEach(data => {
+            data.polylines.forEach(polyline => polyline.setStyle(defaultLineStyle));
+        });
+        Object.values(allAirportMarkers).forEach(marker => {
+            marker.setStyle(defaultAirportStyle);
         });
     };
-    
-    // Highlights a specific roster's route
+
+    // MODIFIED: Highlights a specific roster's route and airports
     window.highlightRoster = function(rosterId) {
-        resetHighlights(); // First, reset all other highlights
+        resetHighlights(); // First, reset everything to default
 
-        const layersToHighlight = rosterLayers[rosterId];
-        if (!layersToHighlight || layersToHighlight.length === 0) return;
+        const rosterData = rosterLayers[rosterId];
+        if (!rosterData) return;
 
-        const featureGroup = L.featureGroup(layersToHighlight);
-        layersToHighlight.forEach(polyline => {
-            polyline.setStyle(highlightStyle).bringToFront();
+        // Highlight the lines for this roster
+        rosterData.polylines.forEach(polyline => {
+            polyline.setStyle(highlightLineStyle).bringToFront();
+        });
+
+        // Highlight the airports for this roster
+        rosterData.airportMarkers.forEach(marker => {
+            marker.setStyle(highlightAirportStyle).bringToFront();
         });
 
         // Zoom and pan the map to fit the highlighted route
-        map.fitBounds(featureGroup.getBounds().pad(0.1));
+        const allLayersForBounds = [...rosterData.polylines, ...rosterData.airportMarkers];
+        if (allLayersForBounds.length > 0) {
+            const featureGroup = L.featureGroup(allLayersForBounds);
+            map.fitBounds(featureGroup.getBounds().pad(0.2));
+        }
     };
 
     // Initial load of airport data when script loads
