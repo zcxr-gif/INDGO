@@ -56,16 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'Chief Flight Instructor', 'IndGo SkyMaster', 'Blue Legacy Commander'
     ];
 
-    // --- DATA LOADING FLAGS ---
-    let dataLoaded = {
-        admin: false,
-        pireps: false,
-        rosters: false,
-        community: false,
-        pilotManagement: false,
-        pilotDb: false,
-    };
-
     if (!token) {
         window.location.href = 'login.html';
         return;
@@ -138,6 +128,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }).showToast();
     }
 
+    // --- DATA PRELOADING FUNCTION ---
+    function preloadDashboardData() {
+        console.log("Pre-loading dashboard data...");
+        // These functions are called without 'await' to run in the background.
+        // They will fetch data and render it when ready, replacing the skeletons.
+        if (adminTabLink && adminTabLink.style.display !== 'none') {
+            populateAdminTools();
+        }
+        if (pilotTabLink && pilotTabLink.style.display !== 'none') {
+            populatePilotDatabase();
+        }
+        if (pirepTabLink && pirepTabLink.style.display !== 'none') {
+            loadPendingPireps();
+        }
+        if (rosterTabLink && rosterTabLink.style.display !== 'none') {
+            populateRosterManagement();
+        }
+        if (pilotManagementTabLink && pilotManagementTabLink.style.display !== 'none') {
+            populatePilotManagement();
+        }
+        if (communityTabLink && communityTabLink.style.display !== 'none') {
+            populateCommunityManagement();
+        }
+    }
+
+
     // --- FETCH USER DATA & SETUP UI ---
     async function fetchUserData() {
         try {
@@ -187,6 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (routeManagerRoles.includes(user.role)) {
                 showTab(rosterTabLink);
             }
+            
+            // *** NEW: Start pre-loading all necessary data after UI is ready ***
+            preloadDashboardData();
 
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -198,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PERFORMANCE OPTIMIZATION: Generic function to render lists efficiently ---
     function renderList(container, items, itemRenderer, emptyMessage) {
         if (!container) return;
-        container.innerHTML = ''; // Clear previous content
+        container.innerHTML = ''; // Clear previous content (including skeletons)
 
         if (!items || items.length === 0) {
             container.innerHTML = `<p>${emptyMessage}</p>`;
@@ -217,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PIREP MANAGEMENT ---
     async function loadPendingPireps() {
         if (!pendingPirepsContainer) return;
-        pendingPirepsContainer.innerHTML = '<p>Loading pending reports...</p>';
         try {
             const pireps = await safeFetch(`${API_BASE_URL}/api/pireps/pending`);
             renderPireps(pireps);
@@ -514,7 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                // Prevent re-processing if the tab is already active
                 if (link.classList.contains('active')) return;
 
                 navLinks.forEach(item => item.classList.remove('active'));
@@ -526,43 +543,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (target) {
                     target.classList.add('active');
                 }
-
-                if (viewId === 'tab-admin' && !dataLoaded.admin) {
-                    populateAdminTools();
-                    dataLoaded.admin = true;
-                }
-                if (viewId === 'tab-pilots' && !dataLoaded.pilotDb) {
-                    populatePilotDatabase();
-                    dataLoaded.pilotDb = true;
-                }
-                if (viewId === 'tab-pirep-management' && !dataLoaded.pireps) {
-                    loadPendingPireps();
-                    dataLoaded.pireps = true;
-                }
-                if (viewId === 'tab-roster-management' && !dataLoaded.rosters) {
-                    populateRosterManagement();
-                    dataLoaded.rosters = true;
-                }
-                if (viewId === 'tab-pilot-management' && !dataLoaded.pilotManagement) {
-                    populatePilotManagement();
-                    dataLoaded.pilotManagement = true;
-                }
-                if (viewId === 'tab-community' && !dataLoaded.community) {
-                    populateCommunityManagement();
-                    dataLoaded.community = true;
-                }
+                
+                // Data is now pre-loaded, so we no longer need the
+                // conditional fetching logic here.
             });
         });
     }
 
-    // --- ADMIN: POPULATE USERS & LOGS ---
+    // --- ADMIN: POPULATE USERS & LOGS (OPTIMIZED) ---
     async function populateAdminTools() {
         try {
-            const users = await safeFetch(`${API_BASE_URL}/api/users`);
+            // OPTIMIZED: Start both network requests in parallel
+            const [users, logs] = await Promise.all([
+                safeFetch(`${API_BASE_URL}/api/users`),
+                safeFetch(`${API_BASE_URL}/api/logs`)
+            ]);
+
+            // Now that both have finished, render the results
             renderUserList(users);
             renderLiveOperations(users);
-
-            const logs = await safeFetch(`${API_BASE_URL}/api/logs`);
             renderLogList(logs);
         } catch (error) {
             console.error('Failed to populate admin tools:', error);
@@ -663,10 +662,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateCommunityManagement() {
         if (!manageEventsContainer || !manageHighlightsContainer) return;
         try {
-            const events = await safeFetch(`${API_BASE_URL}/api/events`);
+            // Run in parallel for speed
+            const [events, highlights] = await Promise.all([
+                safeFetch(`${API_BASE_URL}/api/events`),
+                safeFetch(`${API_BASE_URL}/api/highlights`)
+            ]);
+            
             renderManagementList(events, manageEventsContainer, 'event');
-
-            const highlights = await safeFetch(`${API_BASE_URL}/api/highlights`);
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
         } catch (error) {
             console.error('Failed to populate community management lists:', error);
@@ -968,7 +970,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
-                    if (dataLoaded.pilotDb) populatePilotDatabase();
+                    // Re-populate relevant lists if they are loaded
+                    if (document.getElementById('pilot-db-container')) populatePilotDatabase();
                 } catch (error) {
                     showNotification(`Failed to set callsign: ${error.message}`, 'error');
                 }
@@ -1078,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     })
                 });
                 showNotification('Callsign updated successfully.', 'success');
-                if (dataLoaded.admin) populateAdminTools();
+                if (document.getElementById('tab-admin')) populateAdminTools();
             } catch (error) {
                 showNotification(`Failed to update callsign: ${error.message}`, 'error');
             }
