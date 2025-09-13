@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageToCrop = document.getElementById('image-to-crop');
     const cropAndSaveBtn = document.getElementById('crop-and-save-btn');
     const cancelCropBtn = document.getElementById('cancel-crop-btn');
-    // FIXED: Corrected the ID for the file input
     const pictureInput = document.getElementById('profile-picture-input');
     let cropper;
     let croppedImageBlob = null;
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordForm = document.getElementById('password-form');
     const addMemberForm = document.getElementById('add-member-form');
     const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn');
-    // NEW: Elements for sidebar toggle
     const dashboardContainer = document.querySelector('.dashboard-container');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
 
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "Leadership & Management": ["Chief Executive Officer (CEO)", "Chief Operating Officer (COO)", "PIREP Manager (PM)", "Pilot Relations & Recruitment Manager (PR)", "Technology & Design Manager (TDM)", "Head of Training (COT)", "Chief Marketing Officer (CMO)", "Route Manager (RM)", "Events Manager (EM)"],
         "Flight Operations": ["Flight Instructor (FI)"]
     };
-    // RETAINED: Kept the updated rank structure from the more complete file
     const pilotRanks = [
         'IndGo Cadet', 'Skyline Observer', 'Route Explorer', 'Skyline Officer',
         'Command Captain', 'Elite Captain', 'Blue Eagle', 'Line Instructor',
@@ -74,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // --- NEW: SIDEBAR TOGGLE LOGIC ---
+    // --- SIDEBAR TOGGLE LOGIC ---
     if (sidebarToggleBtn && dashboardContainer) {
         const sidebarState = localStorage.getItem('sidebarState');
         if (sidebarState === 'collapsed') {
@@ -141,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).showToast();
     }
 
-    // --- FETCH USER DATA & SETUP UI (UPDATED) ---
+    // --- FETCH USER DATA & SETUP UI ---
     async function fetchUserData() {
         try {
             const user = await safeFetch(`${API_BASE_URL}/api/me`);
@@ -149,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
 
-            // FIXED: Use new element selectors for the sidebar profile
             if (pilotNameElem) pilotNameElem.textContent = user.name;
             if (pilotCallsignElem) pilotCallsignElem.textContent = user.role ? user.role.toUpperCase() : 'USER';
             if (profilePictureElem) profilePictureElem.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
@@ -198,6 +194,25 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'login.html';
         }
     }
+    
+    // --- PERFORMANCE OPTIMIZATION: Generic function to render lists efficiently ---
+    function renderList(container, items, itemRenderer, emptyMessage) {
+        if (!container) return;
+        container.innerHTML = ''; // Clear previous content
+
+        if (!items || items.length === 0) {
+            container.innerHTML = `<p>${emptyMessage}</p>`;
+            return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+        items.forEach(item => {
+            const element = itemRenderer(item);
+            if (element) fragment.appendChild(element);
+        });
+        
+        container.appendChild(fragment);
+    }
 
     // --- PIREP MANAGEMENT ---
     async function loadPendingPireps() {
@@ -211,32 +226,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderPireps(pireps) {
-        if (!pendingPirepsContainer) return;
-        if (!pireps || pireps.length === 0) {
-            pendingPirepsContainer.innerHTML = '<p>There are no pending PIREPs to review. 🎉</p>';
-            return;
-        }
-        pendingPirepsContainer.innerHTML = pireps.map(p => `
-            <div class="pirep-review-card" id="pirep-${p._id}">
-                <div class="card-header">
-                    <h4>${p.flightNumber} (${p.departure} → ${p.arrival})</h4>
-                    <div class="pilot-info">
-                        <strong>Pilot:</strong> ${p.pilot.name} (${p.pilot.callsign || 'N/A'})
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p><strong>Aircraft:</strong> ${p.aircraft}</p>
-                    <p><strong>Flight Time:</strong> ${p.flightTime.toFixed(1)} hours</p>
-                    <p><strong>Remarks:</strong> ${p.remarks || 'None'}</p>
-                    <p><small>Filed on: ${new Date(p.createdAt).toLocaleString()}</small></p>
-                </div>
-                <div class="card-actions">
-                    <button class="btn-approve" data-id="${p._id}">Approve</button>
-                    <button class="btn-reject" data-id="${p._id}">Reject</button>
+    function createPirepCardElement(p) {
+        const card = document.createElement('div');
+        card.className = 'pirep-review-card';
+        card.id = `pirep-${p._id}`;
+        card.innerHTML = `
+            <div class="card-header">
+                <h4>${p.flightNumber} (${p.departure} → ${p.arrival})</h4>
+                <div class="pilot-info">
+                    <strong>Pilot:</strong> ${p.pilot.name} (${p.pilot.callsign || 'N/A'})
                 </div>
             </div>
-        `).join('');
+            <div class="card-body">
+                <p><strong>Aircraft:</strong> ${p.aircraft}</p>
+                <p><strong>Flight Time:</strong> ${p.flightTime.toFixed(1)} hours</p>
+                <p><strong>Remarks:</strong> ${p.remarks || 'None'}</p>
+                <p><small>Filed on: ${new Date(p.createdAt).toLocaleString()}</small></p>
+            </div>
+            <div class="card-actions">
+                <button class="btn-approve" data-id="${p._id}">Approve</button>
+                <button class="btn-reject" data-id="${p._id}">Reject</button>
+            </div>
+        `;
+        return card;
+    }
+
+    function renderPireps(pireps) {
+        renderList(pendingPirepsContainer, pireps, createPirepCardElement, 'There are no pending PIREPs to review. 🎉');
     }
 
     if (pendingPirepsContainer) {
@@ -267,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pirepCard = document.getElementById(`pirep-${pirepId}`);
                     if (pirepCard) pirepCard.remove();
                     if (pendingPirepsContainer.children.length === 0) {
-                        renderPireps([]);
+                         pendingPirepsContainer.innerHTML = '<p>There are no pending PIREPs to review. 🎉</p>';
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
@@ -296,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pirepCard = document.getElementById(`pirep-${pirepId}`);
                     if (pirepCard) pirepCard.remove();
                     if (pendingPirepsContainer.children.length === 0) {
-                        renderPireps([]);
+                        pendingPirepsContainer.innerHTML = '<p>There are no pending PIREPs to review. 🎉</p>';
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
@@ -419,23 +435,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
+    
     async function loadAndRenderRosters() {
         const container = document.getElementById('manage-rosters-container');
-        if (!container) return;
         try {
             const rosters = await safeFetch(`${API_BASE_URL}/api/rosters`);
-            if (!rosters || rosters.length === 0) {
-                container.innerHTML = '<p>No rosters have been created yet.</p>';
-                return;
-            }
-            container.innerHTML = ''; // Clear container
-            rosters.forEach(roster => {
-                const rosterElement = createRosterCardElement(roster);
-                container.appendChild(rosterElement);
-            });
+            renderList(container, rosters, createRosterCardElement, 'No rosters have been created yet.');
         } catch (error) {
-            container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
+            if (container) container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
         }
     }
 
@@ -506,6 +513,9 @@ document.addEventListener('DOMContentLoaded', () => {
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
+                
+                // Prevent re-processing if the tab is already active
+                if (link.classList.contains('active')) return;
 
                 navLinks.forEach(item => item.classList.remove('active'));
                 contentCards.forEach(content => content.classList.remove('active'));
@@ -604,36 +614,25 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         return card;
     }
-
-
+    
     function renderUserList(users) {
-        if (!userListContainer) return;
-        userListContainer.innerHTML = '';
-        users.forEach(user => {
-            const userCardElement = createUserCardElement(user);
-            userListContainer.appendChild(userCardElement);
-        });
+        renderList(userListContainer, users, createUserCardElement, 'No users found.');
     }
 
+    function createLogEntryElement(log) {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+            <p><strong>Action:</strong> ${log.action.replace(/_/g, ' ')}</p>
+            <p><strong>Admin:</strong> ${log.adminUser?.name || 'Unknown'} (${log.adminUser?.email || '—'})</p>
+            <p><strong>Details:</strong> ${log.details}</p>
+            <small>${new Date(log.timestamp).toLocaleString()}</small>
+        `;
+        return entry;
+    }
+    
     function renderLogList(logs) {
-        if (!logContainer) return;
-        logContainer.innerHTML = '';
-
-        if (!logs || logs.length === 0) {
-            logContainer.innerHTML = '<p>No administrative actions have been logged yet.</p>';
-            return;
-        }
-
-        const logEntries = logs.slice(0, 50).map(log => `
-            <div class="log-entry">
-                <p><strong>Action:</strong> ${log.action.replace(/_/g, ' ')}</p>
-                <p><strong>Admin:</strong> ${log.adminUser?.name || 'Unknown'} (${log.adminUser?.email || '—'})</p>
-                <p><strong>Details:</strong> ${log.details}</p>
-                <small>${new Date(log.timestamp).toLocaleString()}</small>
-            </div>
-        `).join('');
-
-        logContainer.innerHTML = logEntries;
+        renderList(logContainer, logs.slice(0, 50), createLogEntryElement, 'No administrative actions have been logged yet.');
     }
 
     function renderLiveOperations(users) {
@@ -675,26 +674,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (manageHighlightsContainer) manageHighlightsContainer.innerHTML = '<p style="color:red;">Could not load highlights.</p>';
         }
     }
+    
+    function createManagementItemElement(item, type) {
+        const card = document.createElement('div');
+        card.className = 'user-manage-card';
+        card.setAttribute('data-item-id', item._id);
+        card.innerHTML = `
+            <div class="user-info">
+                <strong>${item.title}</strong>
+                <small>${type === 'event' ? new Date(item.date).toLocaleDateString() : `Winner: ${item.winnerName}`}</small>
+            </div>
+            <div class="user-controls">
+                <button type="button" class="delete-user-btn" data-id="${item._id}" data-type="${type}" data-title="${item.title}">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        `;
+        return card;
+    }
 
     function renderManagementList(items, container, type) {
-        if (!items || items.length === 0) {
-            container.innerHTML = `<p>No ${type}s found.</p>`;
-            return;
-        }
-
-        container.innerHTML = items.map(item => `
-            <div class="user-manage-card" data-item-id="${item._id}">
-                <div class="user-info">
-                    <strong>${item.title}</strong>
-                    <small>${type === 'event' ? new Date(item.date).toLocaleDateString() : `Winner: ${item.winnerName}`}</small>
-                </div>
-                <div class="user-controls">
-                    <button type="button" class="delete-user-btn" data-id="${item._id}" data-type="${type}" data-title="${item.title}">
-                        <i class="fas fa-trash-alt"></i> Delete
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        const renderer = (item) => createManagementItemElement(item, type);
+        renderList(container, items, renderer, `No ${type}s found.`);
     }
 
     // --- PILOT DATABASE & MANAGEMENT ---
@@ -704,14 +705,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const users = await safeFetch(`${API_BASE_URL}/api/users`);
             const pilots = (users || []).filter(u => u.role === 'pilot' || Boolean(u.callsign));
-
-            if (pilots.length === 0) {
-                container.innerHTML = '<p>No pilots found.</p>';
-                return;
-            }
-
-            container.innerHTML = pilots.map(p => `
-                <div class="user-manage-card" data-userid="${p._id}">
+            
+            const renderer = (p) => {
+                const card = document.createElement('div');
+                card.className = 'user-manage-card';
+                card.setAttribute('data-userid', p._id);
+                card.innerHTML = `
                     <div class="user-info">
                         <strong>${p.name}</strong> <small>(${p.email})</small><br/>
                         <small>Rank: ${p.rank || '—'} • Hours: ${p.flightHours?.toFixed(1) ?? 0}</small>
@@ -722,8 +721,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </label>
                         <button class="pilot-set-callsign-btn" data-userid="${p._id}">Update</button>
                     </div>
-                </div>
-            `).join('');
+                `;
+                return card;
+            };
+            
+            renderList(container, pilots, renderer, 'No pilots found.');
+
         } catch (error) {
             console.error('Failed to load pilot database:', error);
             if (container) container.innerHTML = `<p style="color:red;">Could not load pilots: ${error.message}</p>`;
@@ -742,20 +745,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPilotList(pilots) {
-        if (!pilotManagementContainer) return;
-        if (pilots.length === 0) {
-            pilotManagementContainer.innerHTML = '<p>No pilots found in the roster.</p>';
-            return;
-        }
-
         const createRankOptions = (currentRank) => {
             return pilotRanks.map(rank =>
                 `<option value="${rank}" ${rank === currentRank ? 'selected' : ''}>${rank}</option>`
             ).join('');
         };
-
-        pilotManagementContainer.innerHTML = pilots.map(pilot => `
-            <div class="user-manage-card" data-userid="${pilot._id}">
+        
+        const renderer = (pilot) => {
+             const card = document.createElement('div');
+             card.className = 'user-manage-card';
+             card.setAttribute('data-userid', pilot._id);
+             card.innerHTML = `
                 <div class="user-info">
                     <strong>${pilot.name}</strong> (${pilot.callsign || 'No Callsign'})
                     <small>${pilot.email}</small>
@@ -768,8 +768,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </select>
                     </label>
                 </div>
-            </div>
-        `).join('');
+            `;
+            return card;
+        };
+        
+        renderList(pilotManagementContainer, pilots, renderer, 'No pilots found in the roster.');
     }
 
     // --- CROPPER LOGIC ---
@@ -812,7 +815,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).toBlob((blob) => {
                     croppedImageBlob = blob;
                     const previewUrl = URL.createObjectURL(blob);
-                    // FIXED: Use new profile picture element for the preview
                     if (profilePictureElem) profilePictureElem.src = previewUrl;
                     if (cropperModal) cropperModal.style.display = 'none';
                     cropper.destroy();
@@ -849,7 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user = result.user;
                 if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name}!`;
 
-                // FIXED: Update new profile elements on the UI
                 if (pilotNameElem) pilotNameElem.textContent = user.name;
                 if (user.imageUrl && profilePictureElem) {
                     profilePictureElem.src = `${user.imageUrl}?${new Date().getTime()}`;
@@ -981,8 +982,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userId = select.dataset.userid;
                 const newRole = select.value;
                 const originalRole = Array.from(select.options).find(opt => opt.defaultSelected)?.value || select.options[0].value;
-
-
 
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
