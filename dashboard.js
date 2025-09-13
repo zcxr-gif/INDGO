@@ -6,16 +6,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageToCrop = document.getElementById('image-to-crop');
     const cropAndSaveBtn = document.getElementById('crop-and-save-btn');
     const cancelCropBtn = document.getElementById('cancel-crop-btn');
-    const pictureInput = document.getElementById('profile-picture');
+    // FIXED: Corrected the ID for the file input
+    const pictureInput = document.getElementById('profile-picture-input');
     let cropper;
     let croppedImageBlob = null;
 
-    // --- PAGE ELEMENTS ---
+    // --- PAGE ELEMENTS (MERGED & UPDATED) ---
     const welcomeMessage = document.getElementById('welcome-message');
     const profileForm = document.getElementById('profile-form');
     const passwordForm = document.getElementById('password-form');
     const addMemberForm = document.getElementById('add-member-form');
     const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn');
+    // NEW: Elements for sidebar toggle
+    const dashboardContainer = document.querySelector('.dashboard-container');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+
 
     // --- TAB LINKS ---
     const adminTabLink = document.getElementById('admin-tab-link');
@@ -25,10 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const rosterTabLink = document.getElementById('roster-tab-link');
     const pilotTabLink = document.getElementById('pilot-tab-link');
 
-    // --- PROFILE CARD ELEMENTS ---
-    const profileCardPicture = document.getElementById('profile-card-picture');
-    const profileCardName = document.getElementById('profile-card-name');
-    const profileCardRole = document.getElementById('profile-card-role');
+    // --- PROFILE CARD ELEMENTS (UPDATED) ---
+    const profilePictureElem = document.getElementById('profile-picture');
+    const pilotNameElem = document.getElementById('pilot-name');
+    const pilotCallsignElem = document.getElementById('pilot-callsign');
 
     // --- CONTAINERS & DYNAMIC ELEMENTS ---
     const pilotManagementContainer = document.getElementById('pilot-management-container');
@@ -38,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageHighlightsContainer = document.getElementById('manage-highlights-container');
     const pendingPirepsContainer = document.getElementById('pending-pireps-container');
     const rosterManagementContainer = document.getElementById('tab-roster-management');
-    
+
     // --- APP STATE & CONFIG ---
     const token = localStorage.getItem('authToken');
     let currentUserId = null;
@@ -47,13 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         "Leadership & Management": ["Chief Executive Officer (CEO)", "Chief Operating Officer (COO)", "PIREP Manager (PM)", "Pilot Relations & Recruitment Manager (PR)", "Technology & Design Manager (TDM)", "Head of Training (COT)", "Chief Marketing Officer (CMO)", "Route Manager (RM)", "Events Manager (EM)"],
         "Flight Operations": ["Flight Instructor (FI)"]
     };
-    // UPDATED: New rank structure from server.js
+    // RETAINED: Kept the updated rank structure from the more complete file
     const pilotRanks = [
         'IndGo Cadet', 'Skyline Observer', 'Route Explorer', 'Skyline Officer',
         'Command Captain', 'Elite Captain', 'Blue Eagle', 'Line Instructor',
         'Chief Flight Instructor', 'IndGo SkyMaster', 'Blue Legacy Commander'
     ];
-    
+
     // --- DATA LOADING FLAGS ---
     let dataLoaded = {
         admin: false,
@@ -69,13 +74,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // --- NEW: SIDEBAR TOGGLE LOGIC ---
+    if (sidebarToggleBtn && dashboardContainer) {
+        const sidebarState = localStorage.getItem('sidebarState');
+        if (sidebarState === 'collapsed') {
+            dashboardContainer.classList.add('sidebar-collapsed');
+        }
+        sidebarToggleBtn.addEventListener('click', () => {
+            dashboardContainer.classList.toggle('sidebar-collapsed');
+            if (dashboardContainer.classList.contains('sidebar-collapsed')) {
+                localStorage.setItem('sidebarState', 'collapsed');
+            } else {
+                localStorage.setItem('sidebarState', 'expanded');
+            }
+        });
+    }
+
     // --- SAFE FETCH WRAPPER ---
     async function safeFetch(url, options = {}) {
         options.headers = options.headers || {};
         if (!options.headers.Authorization && token) {
             options.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         if (!(options.body instanceof FormData) && !options.headers['Content-Type']) {
             options.headers['Content-Type'] = 'application/json';
         }
@@ -88,7 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
             data = await res.json();
         } else {
             const text = await res.text();
-            data = { message: text }; 
+            data = {
+                message: text
+            };
         }
 
         if (!res.ok) {
@@ -112,22 +135,24 @@ document.addEventListener('DOMContentLoaded', () => {
             stopOnFocus: true,
             style: {
                 background: type === 'success' ? "linear-gradient(to right, #00b09b, #96c93d)" :
-                            type === 'error' ? "linear-gradient(to right, #ff5f6d, #ffc371)" :
-                            "linear-gradient(to right, #4facfe, #00f2fe)",
+                    type === 'error' ? "linear-gradient(to right, #ff5f6d, #ffc371)" :
+                    "linear-gradient(to right, #4facfe, #00f2fe)",
             },
         }).showToast();
     }
 
-    // --- FETCH USER DATA & SETUP UI ---
+    // --- FETCH USER DATA & SETUP UI (UPDATED) ---
     async function fetchUserData() {
         try {
             const user = await safeFetch(`${API_BASE_URL}/api/me`);
             currentUserId = user._id;
 
             if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name || 'Pilot'}!`;
-            if (profileCardName) profileCardName.textContent = user.name;
-            if (profileCardRole) profileCardRole.textContent = user.role ? user.role.toUpperCase() : 'USER';
-            if (profileCardPicture) profileCardPicture.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
+
+            // FIXED: Use new element selectors for the sidebar profile
+            if (pilotNameElem) pilotNameElem.textContent = user.name;
+            if (pilotCallsignElem) pilotCallsignElem.textContent = user.role ? user.role.toUpperCase() : 'USER';
+            if (profilePictureElem) profilePictureElem.src = user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=120`;
 
             // Populate form fields
             document.getElementById('profile-name').value = user.name;
@@ -137,8 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-youtube').value = user.youtube || '';
             document.getElementById('profile-preferred').value = user.preferredContact || 'none';
 
-            // --- ROLE-BASED TAB VISIBILITY (MERGED) ---
-            const showTab = (element) => { if (element) element.style.display = 'list-item'; };
+            // --- ROLE-BASED TAB VISIBILITY ---
+            const showTab = (element) => {
+                if (element) element.style.display = 'list-item';
+            };
 
             if (user.role === 'admin') {
                 showTab(adminTabLink);
@@ -154,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pilotManagerRoles.includes(user.role)) {
                 showTab(pilotManagementTabLink);
             }
-            
+
             const pirepManagerRoles = ['admin', 'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'PIREP Manager (PM)'];
             if (pirepManagerRoles.includes(user.role)) {
                 showTab(pirepTabLink);
@@ -164,14 +191,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (routeManagerRoles.includes(user.role)) {
                 showTab(rosterTabLink);
             }
-            
+
         } catch (error) {
             console.error('Error fetching user data:', error);
             localStorage.removeItem('authToken');
             window.location.href = 'login.html';
         }
     }
-    
+
     // --- PIREP MANAGEMENT ---
     async function loadPendingPireps() {
         if (!pendingPirepsContainer) return;
@@ -221,9 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.target.disabled = true;
                 e.target.textContent = 'Approving...';
                 try {
-                    const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/approve`, { method: 'PUT' });
-                    
-                    // UPDATED: Handle detailed promotion notifications
+                    const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/approve`, {
+                        method: 'PUT'
+                    });
+
                     if (result.promotionDetails) {
                         const perksList = result.promotionDetails.perks.map(perk => `<li>${perk}</li>`).join('');
                         const promotionMessage = `
@@ -231,15 +259,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <strong>New Rank:</strong> ${result.promotionDetails.newRank}<br>
                             <strong>Perks:</strong><ul>${perksList}</ul>
                         `;
-                        showNotification(promotionMessage, 'success', 10000); // Show for longer
+                        showNotification(promotionMessage, 'success', 10000);
                     } else {
                         showNotification(result.message, 'success');
                     }
 
                     const pirepCard = document.getElementById(`pirep-${pirepId}`);
-                    if(pirepCard) pirepCard.remove();
+                    if (pirepCard) pirepCard.remove();
                     if (pendingPirepsContainer.children.length === 0) {
-                        renderPireps([]); 
+                        renderPireps([]);
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
@@ -260,13 +288,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const result = await safeFetch(`${API_BASE_URL}/api/pireps/${pirepId}/reject`, {
                         method: 'PUT',
-                        body: JSON.stringify({ reason })
+                        body: JSON.stringify({
+                            reason
+                        })
                     });
                     showNotification(result.message, 'success');
                     const pirepCard = document.getElementById(`pirep-${pirepId}`);
-                    if(pirepCard) pirepCard.remove();
+                    if (pirepCard) pirepCard.remove();
                     if (pendingPirepsContainer.children.length === 0) {
-                        renderPireps([]); 
+                        renderPireps([]);
                     }
                 } catch (error) {
                     showNotification(`Error: ${error.message}`, 'error');
@@ -278,10 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ROSTER MANAGEMENT (LOGIC CORRECTED) ---
+    // --- ROSTER MANAGEMENT ---
     function populateRosterManagement() {
         if (!rosterManagementContainer) return;
-        
+
         rosterManagementContainer.innerHTML = `
             <h2><i class="fas fa-clipboard-list"></i> Roster Management</h2>
             <p>Create and manage daily rosters for the Sector Ops system.</p>
@@ -319,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div id="manage-rosters-container"><p>Loading rosters...</p></div>
             </div>
         `;
-        
+
         loadAndRenderRosters();
 
         document.getElementById('add-leg-btn').addEventListener('click', () => {
@@ -336,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="remove-leg-btn" style="background: var(--error-color); border: none; color: white; border-radius: 5px; padding: 0.5rem 0.75rem;">&times;</button>`;
             legContainer.appendChild(newLeg);
         });
-        
+
         document.getElementById('roster-legs-container').addEventListener('click', e => {
             if (e.target.classList.contains('remove-leg-btn')) {
                 e.target.parentElement.remove();
@@ -372,11 +402,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const newRoster = await safeFetch(`${API_BASE_URL}/api/rosters`, { method: 'POST', body: JSON.stringify(rosterData) });
+                const newRoster = await safeFetch(`${API_BASE_URL}/api/rosters`, {
+                    method: 'POST',
+                    body: JSON.stringify(rosterData)
+                });
                 showNotification('Roster created successfully!', 'success');
                 e.target.reset();
                 document.getElementById('roster-legs-container').innerHTML = `<div class="roster-leg-input" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end;"><input type="text" placeholder="Flight #" required style="flex: 1 1 100px;"><input type="text" placeholder="Aircraft" required style="flex: 1 1 100px;"><input type="text" placeholder="Departure ICAO" required maxlength="4" style="flex: 1 1 120px;"><input type="text" placeholder="Arrival ICAO" required maxlength="4" style="flex: 1 1 120px;"><input type="number" step="0.1" min="0.1" placeholder="Time (hrs)" required style="flex: 1 1 80px;"></div>`;
-                
+
                 const rosterContainer = document.getElementById('manage-rosters-container');
                 const rosterElement = createRosterCardElement(newRoster);
                 rosterContainer.prepend(rosterElement);
@@ -405,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
         }
     }
-    
+
     function createRosterCardElement(roster) {
         const card = document.createElement('div');
         card.className = 'user-manage-card';
@@ -433,7 +466,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rosterName = deleteButton.dataset.name;
                 if (confirm(`Are you sure you want to delete the roster "${rosterName}"?`)) {
                     try {
-                        await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
+                        await safeFetch(`${API_BASE_URL}/api/rosters/${rosterId}`, {
+                            method: 'DELETE'
+                        });
                         showNotification('Roster deleted successfully.', 'success');
                         deleteButton.closest('.user-manage-card').remove();
                     } catch (error) {
@@ -444,13 +479,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (generateButton) {
                 if (!confirm('Are you sure? This will replace all existing auto-generated rosters.')) return;
-                
+
                 generateButton.disabled = true;
                 generateButton.textContent = 'Generating...';
                 try {
-                    const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, { method: 'POST' });
+                    const result = await safeFetch(`${API_BASE_URL}/api/rosters/generate`, {
+                        method: 'POST'
+                    });
                     showNotification(result.message, 'success');
-                    loadAndRenderRosters(); 
+                    loadAndRenderRosters();
                 } catch (error) {
                     showNotification(`Generation failed: ${error.message}`, 'error');
                 } finally {
@@ -461,18 +498,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- TAB SWITCHING LOGIC (MERGED) ---
+    // --- TAB SWITCHING LOGIC ---
     function attachTabListeners() {
         const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
         const contentCards = document.querySelectorAll('.main-content .content-card');
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault(); 
+                e.preventDefault();
 
                 navLinks.forEach(item => item.classList.remove('active'));
                 contentCards.forEach(content => content.classList.remove('active'));
-                
+
                 link.classList.add('active');
                 const viewId = link.dataset.view;
                 const target = document.getElementById(viewId);
@@ -500,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     populatePilotManagement();
                     dataLoaded.pilotManagement = true;
                 }
-                 if (viewId === 'tab-community' && !dataLoaded.community) {
+                if (viewId === 'tab-community' && !dataLoaded.community) {
                     populateCommunityManagement();
                     dataLoaded.community = true;
                 }
@@ -513,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const users = await safeFetch(`${API_BASE_URL}/api/users`);
             renderUserList(users);
-            renderLiveOperations(users); 
+            renderLiveOperations(users);
 
             const logs = await safeFetch(`${API_BASE_URL}/api/logs`);
             renderLogList(logs);
@@ -523,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (logContainer) logContainer.innerHTML = '<p style="color: red;">Could not load logs.</p>';
         }
     }
-    
+
     const createRoleOptions = (selectedRole) => {
         let optionsHtml = '';
         for (const group in allRoles) {
@@ -604,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
 
         const onDutyPilots = users.filter(u => u.dutyStatus === 'ON_DUTY');
-        
+
         if (onDutyPilots.length === 0) {
             container.innerHTML = '<p>No pilots are currently on duty.</p>';
             return;
@@ -634,8 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderManagementList(highlights, manageHighlightsContainer, 'highlight');
         } catch (error) {
             console.error('Failed to populate community management lists:', error);
-            if(manageEventsContainer) manageEventsContainer.innerHTML = '<p style="color:red;">Could not load events.</p>';
-            if(manageHighlightsContainer) manageHighlightsContainer.innerHTML = '<p style="color:red;">Could not load highlights.</p>';
+            if (manageEventsContainer) manageEventsContainer.innerHTML = '<p style="color:red;">Could not load events.</p>';
+            if (manageHighlightsContainer) manageHighlightsContainer.innerHTML = '<p style="color:red;">Could not load highlights.</p>';
         }
     }
 
@@ -659,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
     }
-    
+
     // --- PILOT DATABASE & MANAGEMENT ---
     async function populatePilotDatabase() {
         const container = document.getElementById('pilot-db-container');
@@ -705,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPilotList(pilots) {
-        if(!pilotManagementContainer) return;
+        if (!pilotManagementContainer) return;
         if (pilots.length === 0) {
             pilotManagementContainer.innerHTML = '<p>No pilots found in the roster.</p>';
             return;
@@ -734,9 +771,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
     }
-    
+
     // --- CROPPER LOGIC ---
-    if(pictureInput) {
+    if (pictureInput) {
         pictureInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
@@ -745,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (imageToCrop) imageToCrop.src = reader.result;
                     if (cropperModal) cropperModal.style.display = 'flex';
                     if (cropper) cropper.destroy();
-                    if(imageToCrop) {
+                    if (imageToCrop) {
                         cropper = new Cropper(imageToCrop, {
                             aspectRatio: 1 / 1,
                             viewMode: 1,
@@ -758,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if(cancelCropBtn) {
+    if (cancelCropBtn) {
         cancelCropBtn.addEventListener('click', () => {
             if (cropperModal) cropperModal.style.display = 'none';
             if (cropper) cropper.destroy();
@@ -766,13 +803,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if(cropAndSaveBtn) {
+    if (cropAndSaveBtn) {
         cropAndSaveBtn.addEventListener('click', () => {
             if (cropper) {
-                cropper.getCroppedCanvas({ width: 250, height: 250 }).toBlob((blob) => {
+                cropper.getCroppedCanvas({
+                    width: 250,
+                    height: 250
+                }).toBlob((blob) => {
                     croppedImageBlob = blob;
                     const previewUrl = URL.createObjectURL(blob);
-                    if (profileCardPicture) profileCardPicture.src = previewUrl;
+                    // FIXED: Use new profile picture element for the preview
+                    if (profilePictureElem) profilePictureElem.src = previewUrl;
                     if (cropperModal) cropperModal.style.display = 'none';
                     cropper.destroy();
                     if (pictureInput) pictureInput.value = '';
@@ -807,9 +848,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.token) localStorage.setItem('authToken', result.token);
                 const user = result.user;
                 if (welcomeMessage) welcomeMessage.textContent = `Welcome, ${user.name}!`;
-                if (profileCardName) profileCardName.textContent = user.name;
-                if (user.imageUrl && profileCardPicture) {
-                    profileCardPicture.src = `${user.imageUrl}?${new Date().getTime()}`;
+
+                // FIXED: Update new profile elements on the UI
+                if (pilotNameElem) pilotNameElem.textContent = user.name;
+                if (user.imageUrl && profilePictureElem) {
+                    profilePictureElem.src = `${user.imageUrl}?${new Date().getTime()}`;
                 }
                 croppedImageBlob = null;
             } catch (error) {
@@ -825,16 +868,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentPassword = document.getElementById('current-password').value;
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
-            
+
             if (newPassword !== confirmPassword) {
                 showNotification('New passwords do not match.', 'error');
                 return;
             }
-            
+
             try {
                 await safeFetch(`${API_BASE_URL}/api/me/password`, {
                     method: 'POST',
-                    body: JSON.stringify({ currentPassword, newPassword })
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
                 });
                 showNotification('Password updated successfully!', 'success');
                 passwordForm.reset();
@@ -844,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ADD MEMBER (ADMIN) (UPDATED) ---
+    // --- ADD MEMBER (ADMIN) ---
     if (addMemberForm) {
         addMemberForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -859,7 +905,13 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const newUser = await safeFetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
-                    body: JSON.stringify({ name, email, password, role, callsign })
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        password,
+                        role,
+                        callsign
+                    })
                 });
                 showNotification('User created successfully!', 'success');
                 addMemberForm.reset();
@@ -883,9 +935,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userId = deleteBtn.dataset.userid;
                 const userName = deleteBtn.dataset.username;
                 if (!userId || !confirm(`WARNING: Are you sure you want to delete ${userName}? This action cannot be undone.`)) return;
-                
+
                 try {
-                    await safeFetch(`${API_BASE_URL}/api/users/${userId}`, { method: 'DELETE' });
+                    await safeFetch(`${API_BASE_URL}/api/users/${userId}`, {
+                        method: 'DELETE'
+                    });
                     showNotification('User deleted successfully.', 'success');
                     deleteBtn.closest('.user-manage-card').remove();
                 } catch (error) {
@@ -908,10 +962,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
                         method: 'PUT',
-                        body: JSON.stringify({ callsign })
+                        body: JSON.stringify({
+                            callsign
+                        })
                     });
                     showNotification(`Callsign ${callsign} assigned.`, 'success');
-                    if(dataLoaded.pilotDb) populatePilotDatabase(); 
+                    if (dataLoaded.pilotDb) populatePilotDatabase();
                 } catch (error) {
                     showNotification(`Failed to set callsign: ${error.message}`, 'error');
                 }
@@ -924,12 +980,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const select = e.target;
                 const userId = select.dataset.userid;
                 const newRole = select.value;
-                const originalRole = Array.from(select.options).find(opt => opt.defaultSelected)?.value || select.options[0].value;
-                
+                const originalRole = Array.from(select.options).find(opt => opt.defaultSelected) ? .value || select.options[0].value;
+
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
                         method: 'PUT',
-                        body: JSON.stringify({ newRole })
+                        body: JSON.stringify({
+                            newRole
+                        })
                     });
                     showNotification('User role updated successfully.', 'success');
                     Array.from(select.options).forEach(opt => opt.defaultSelected = false);
@@ -955,7 +1013,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const postTitle = button.dataset.title;
             if (!confirm(`Are you sure you want to delete the ${postType}: "${postTitle}"?`)) return;
             try {
-                await safeFetch(`${API_BASE_URL}/api/${postType}s/${postId}`, { method: 'DELETE' });
+                await safeFetch(`${API_BASE_URL}/api/${postType}s/${postId}`, {
+                    method: 'DELETE'
+                });
                 const successMessage = `${postType.charAt(0).toUpperCase() + postType.slice(1)} deleted successfully.`;
                 showNotification(successMessage, 'success');
                 button.closest('.user-manage-card').remove();
@@ -966,13 +1026,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- EVENT DELEGATION: PILOT MANAGEMENT ---
-    if(pilotManagementContainer) {
+    if (pilotManagementContainer) {
         pilotManagementContainer.addEventListener('change', async (e) => {
             if (e.target.classList.contains('rank-select')) {
                 const selectElement = e.target;
                 const userId = selectElement.dataset.userid;
                 const newRank = selectElement.value;
-                const originalRank = Array.from(selectElement.options).find(opt => opt.defaultSelected)?.value;
+                const originalRank = Array.from(selectElement.options).find(opt => opt.defaultSelected) ? .value;
 
                 if (!confirm(`Are you sure you want to change this pilot's rank to ${newRank}?`)) {
                     selectElement.value = originalRank; // Revert on cancel
@@ -981,10 +1041,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await safeFetch(`${API_BASE_URL}/api/users/${userId}/rank`, {
                         method: 'PUT',
-                        body: JSON.stringify({ newRank })
+                        body: JSON.stringify({
+                            newRank
+                        })
                     });
                     showNotification('Pilot rank updated successfully!', 'success');
-                     // Update default selected state
+                    // Update default selected state
                     Array.from(selectElement.options).forEach(opt => opt.defaultSelected = false);
                     selectElement.querySelector(`option[value="${newRank}"]`).defaultSelected = true;
                 } catch (error) {
@@ -1010,10 +1072,12 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await safeFetch(`${API_BASE_URL}/api/users/${userId}/callsign`, {
                     method: 'PUT',
-                    body: JSON.stringify({ callsign })
+                    body: JSON.stringify({
+                        callsign
+                    })
                 });
                 showNotification('Callsign updated successfully.', 'success');
-                if(dataLoaded.admin) populateAdminTools();
+                if (dataLoaded.admin) populateAdminTools();
             } catch (error) {
                 showNotification(`Failed to update callsign: ${error.message}`, 'error');
             }
@@ -1039,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     const createHighlightForm = document.getElementById('create-highlight-form');
     if (createHighlightForm) {
         createHighlightForm.addEventListener('submit', async (e) => {
@@ -1058,16 +1122,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // --- LOGOUT ---
-    if(sidebarLogoutBtn) {
+    if (sidebarLogoutBtn) {
         sidebarLogoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('authToken');
             window.location.href = 'index.html';
         });
     }
-    
+
     // --- INITIALIZATION ---
     attachTabListeners();
     fetchUserData();

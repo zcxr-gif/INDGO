@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard - INDGO AIR Virtual</title>
     <link rel="stylesheet" href="dashboard.css">
@@ -14,32 +14,40 @@
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="/images/indgo.png" alt="Logo" class="logo-image">
-                <span class="logo-text">Staff Dashboard</span>
-            </div>
-            
-            <div class="sidebar-profile">
-                <img id="profile-card-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
-                <h3 id="profile-card-name">[User Name]</h3>
-                <p id="profile-card-role" class="user-role">STAFF</p>
+                <div class="logo-container">
+                    <img src="/images/indgo.png" alt="Logo" class="logo-image">
+                    <span class="logo-text">Staff Dashboard</span>
+                </div>
+                <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="#" class="nav-link active" data-view="tab-profile"><i class="fas fa-user-edit"></i> My Profile</a></li>
-                    <li><a href="#" class="nav-link" data-view="tab-password"><i class="fas fa-key"></i> Security</a></li>
-                    <li id="pirep-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pirep-management"><i class="fas fa-check-square"></i> PIREP Management</a></li>
-                    <li id="roster-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-roster-management"><i class="fas fa-clipboard-list"></i> Roster Management</a></li>
-                    <li id="pilot-management-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilot-management"><i class="fas fa-user-cog"></i> Manage Pilots</a></li>
-                    <li id="community-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-community"><i class="fas fa-users"></i> Community</a></li>
-                    <li id="admin-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-admin"><i class="fas fa-user-shield"></i> Admin Tools</a></li>
-                    <li id="pilot-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilots"><i class="fas fa-database"></i> Pilot Database</a></li>
+                    <li><a href="#" class="nav-link active" data-view="tab-profile"><i class="fas fa-user-edit"></i><span class="nav-text">My Profile</span></a></li>
+                    <li><a href="#" class="nav-link" data-view="tab-password"><i class="fas fa-key"></i><span class="nav-text">Security</span></a></li>
+                    <li id="pirep-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pirep-management"><i class="fas fa-check-square"></i><span class="nav-text">PIREP Management</span></a></li>
+                    <li id="roster-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-roster-management"><i class="fas fa-clipboard-list"></i><span class="nav-text">Roster Management</span></a></li>
+                    <li id="pilot-management-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilot-management"><i class="fas fa-user-cog"></i><span class="nav-text">Manage Pilots</span></a></li>
+                    <li id="community-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-community"><i class="fas fa-users"></i><span class="nav-text">Community</span></a></li>
+                    <li id="admin-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-admin"><i class="fas fa-user-shield"></i><span class="nav-text">Admin Tools</span></a></li>
+                    <li id="pilot-tab-link" style="display: none;"><a href="#" class="nav-link" data-view="tab-pilots"><i class="fas fa-database"></i><span class="nav-text">Pilot Database</span></a></li>
                 </ul>
             </nav>
 
             <div class="sidebar-footer">
-                 <a href="crew-center.html" class="dashboard-link"><i class="fas fa-plane"></i> Crew Center</a>
-                 <a href="#" id="sidebar-logout-btn" class="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <div class="sidebar-profile">
+                    <img id="profile-picture" src="images/default-avatar.png" alt="Profile Picture" class="profile-img">
+                    <div class="profile-details">
+                        <h3 id="pilot-name">Loading...</h3>
+                        <p id="pilot-callsign" class="user-role">Loading...</p>
+                    </div>
+                </div>
+                <div class="sidebar-actions">
+                    <a href="crew-center.html" class="dashboard-link"><i class="fas fa-plane"></i><span class="nav-text">Crew Center</span></a>
+                    <a href="#" id="sidebar-logout-btn" class="logout-button"><i class="fas fa-sign-out-alt"></i><span class="nav-text">Logout</span></a>
+                </div>
             </div>
         </aside>
 
@@ -83,8 +91,8 @@
                     </div>
                     <hr style="margin: 2rem 0;">
                     <div class="form-group">
-                        <label for="profile-picture">Update Profile Picture</label>
-                        <input type="file" id="profile-picture" accept="image/*">
+                        <label for="profile-picture-input">Update Profile Picture</label>
+                        <input type="file" id="profile-picture-input" accept="image/*">
                     </div>
                     <button type="submit" class="cta-button">Save Changes</button>
                 </form>
@@ -119,7 +127,7 @@
             </div>
 
             <div id="tab-roster-management" class="content-card">
-                </div>
+            </div>
 
             <div id="tab-pilot-management" class="content-card">
                 <h2><i class="fas fa-user-cog"></i> Pilot Roster Management</h2>
@@ -133,30 +141,24 @@
                 <h2><i class="fas fa-user-shield"></i> Administrator Tools</h2>
                 <p>Manage team members and site settings.</p>
 
-                <div id="live-ops-panel">
+                <div id="live-ops-panel" class="content-card">
                     <h3>Live Operations</h3>
-                    <div id="live-ops-container" class="user-list-container-style" style="margin-bottom: 2rem;">
+                    <div id="live-ops-container" class="user-list-container-style">
                         <p>Loading live operations status...</p>
                     </div>
                 </div>
-                <hr style="margin: 2rem 0;">
-                <div id="manage-users-panel">
+                
+                <div id="manage-users-panel" class="content-card">
                     <h3>Manage Team Members</h3>
                     <div id="user-list-container">
                         <p>Loading users...</p>
                     </div>
                 </div>
 
-                <hr style="margin: 2rem 0;">
-
-                <div id="admin-panel">
+                <div id="admin-panel" class="content-card">
                     <h3>Add New Team Member</h3>
                     <form id="add-member-form" class="dashboard-form">
-                        <div class="form-group">
-                            <label for="new-member-name">Full Name</label>
-                            <input type="text" id="new-member-name" required>
-                        </div>
-                        <div class="form-group">
+                         <div class="form-group">
                             <label for="new-member-email">Email Address</label>
                             <input type="email" id="new-member-email" required>
                         </div>
@@ -170,7 +172,7 @@
                                 <optgroup label="General Roles">
                                     <option value="staff">Staff</option>
                                     <option value="pilot">Pilot</option>
-                                    <option value="admin">Admin</option>
+                                    <option value="admin">Admin (Site Control)</option>
                                 </optgroup>
                                 <optgroup label="Leadership & Management">
                                     <option value="Chief Executive Officer (CEO)">Chief Executive Officer (CEO)</option>
@@ -196,9 +198,7 @@
                     </form>
                 </div>
 
-                <hr style="margin: 2rem 0;">
-
-                <div id="view-logs-panel">
+                <div id="view-logs-panel" class="content-card">
                     <h3>Admin Activity Log</h3>
                     <div id="log-container">
                         <p>Loading logs...</p>
@@ -210,7 +210,7 @@
                 <h2><i class="fas fa-users"></i> Community Content Management</h2>
                 <p>Create and manage events and weekly highlights for the community page.</p>
 
-                <div id="create-event-panel">
+                <div id="create-event-panel" class="content-card">
                     <h3>Post a New Event</h3>
                     <form id="create-event-form" class="dashboard-form">
                         <div class="form-group">
@@ -233,9 +233,7 @@
                     </form>
                 </div>
 
-                <hr style="margin: 2rem 0;">
-
-                <div id="create-highlight-panel">
+                <div id="create-highlight-panel" class="content-card">
                     <h3>Post a Weekly Highlight</h3>
                     <form id="create-highlight-form" class="dashboard-form">
                         <div class="form-group">
@@ -258,18 +256,14 @@
                     </form>
                 </div>
 
-                <hr style="margin: 2rem 0;">
-
-                <div id="manage-events-panel">
+                <div id="manage-events-panel" class="content-card">
                     <h3>Manage Existing Events</h3>
                     <div id="manage-events-container">
                         <p>Loading events...</p>
                     </div>
                 </div>
 
-                <hr style="margin: 2rem 0;">
-
-                <div id="manage-highlights-panel">
+                <div id="manage-highlights-panel" class="content-card">
                     <h3>Manage Existing Highlights</h3>
                     <div id="manage-highlights-container">
                         <p>Loading highlights...</p>
