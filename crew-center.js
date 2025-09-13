@@ -1,13 +1,93 @@
+<script>
+// Crew Center – Rank-aware UI + nicer Sector Ops + gated PIREP aircraft chooser
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('authToken');
     const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
-    // --- Notification Function ---
+    // --- Rank model (keep in sync with backend) ---
+    const PILOT_RANKS = [
+        'IndGo Cadet',
+        'Skyline Observer',
+        'Route Explorer',
+        'Skyline Officer',
+        'Command Captain',
+        'Elite Captain',
+        'Blue Eagle',
+        'Line Instructor',
+        'Chief Flight Instructor',
+        'IndGo SkyMaster',
+        'Blue Legacy Commander'
+    ];
+    const rankIndex = (r) => {
+        const i = PILOT_RANKS.indexOf(String(r || '').trim());
+        return i >= 0 ? i : -1;
+    };
+
+    // --- Fleet definition (can expand later; maps min allowed rank per type) ---
+    // Codes match typical strings you use in PIREPs/rosters.
+    const FLEET = [
+        { code:'Q400', name:'De Havilland Dash 8 Q400', minRank:'IndGo Cadet', operator:'IndGo Air Virtual' },
+        { code:'A320', name:'Airbus A320',              minRank:'IndGo Cadet', operator:'IndGo Air Virtual' },
+        { code:'B738', name:'Boeing 737-800',           minRank:'IndGo Cadet', operator:'IndGo Air Virtual' },
+
+        { code:'A321', name:'Airbus A321',              minRank:'Skyline Observer', operator:'IndGo Air Virtual' },
+        { code:'B737', name:'Boeing 737 (family)',      minRank:'Skyline Observer', operator:'IndGo Air Virtual' },
+
+        { code:'A330', name:'Airbus A330-300',          minRank:'Route Explorer', operator:'IndGo Air Virtual' },
+        { code:'B38M', name:'Boeing 737 MAX 8',         minRank:'Route Explorer', operator:'IndGo Air Virtual' },
+
+        { code:'B788', name:'Boeing 787-8',             minRank:'Skyline Officer', operator:'IndGo Air Virtual' },
+        { code:'B77L', name:'Boeing 777-200LR',         minRank:'Skyline Officer', operator:'IndGo Air Virtual' },
+
+        { code:'B789', name:'Boeing 787-9',             minRank:'Command Captain', operator:'IndGo Air Virtual' },
+        { code:'B77W', name:'Boeing 777-300ER',         minRank:'Command Captain', operator:'IndGo Air Virtual' },
+
+        { code:'A350', name:'Airbus A350-900',          minRank:'Elite Captain', operator:'IndGo Air Virtual' },
+
+        { code:'A380', name:'Airbus A380-800',          minRank:'Blue Eagle', operator:'IndGo Air Virtual' },
+        { code:'B744', name:'Boeing 747-400',           minRank:'Blue Eagle', operator:'IndGo Air Virtual' },
+    ];
+    const DEFAULT_OPERATOR = 'IndGo Air Virtual';
+
+    // Mirror of backend aircraft→rank deduction (used for history chips & leg badges)
+    const deduceRankFromAircraftFE = (acStr) => {
+        const s = String(acStr || '').toUpperCase();
+        const has = (pat) => new RegExp(pat, 'i').test(s);
+        if (has('(Q400|A320|B738)')) return 'IndGo Cadet';
+        if (has('(A321|B737)')) return 'Skyline Observer';
+        if (has('(A330|B38M)')) return 'Route Explorer';
+        if (has('(787-8|B788|777-200LR|B77L)')) return 'Skyline Officer';
+        if (has('(787-9|B789|777-300ER|B77W)')) return 'Command Captain';
+        if (has('A350')) return 'Elite Captain';
+        if (has('(A380|747|744|B744)')) return 'Blue Eagle';
+        return 'Unknown';
+    };
+
+    const userCanFlyAircraft = (userRank, aircraftCode) => {
+        const ac = FLEET.find(a => a.code === aircraftCode);
+        if (!ac) return false;
+        const ui = rankIndex(userRank);
+        const ri = rankIndex(ac.minRank);
+        return ui >= 0 && ri >= 0 && ri <= ui;
+    };
+
+    const getAllowedFleet = (userRank) =>
+        FLEET.filter(a => userCanFlyAircraft(userRank, a.code));
+
+    // --- Notifications ---
     function showNotification(message, type) {
-        Toastify({ text: message, duration: 3000, close: true, gravity: "top", position: "right", stopOnFocus: true, style: { background: type === 'success' ? "#28a745" : type === 'error' ? "#dc3545" : "#001B94" } }).showToast();
+        Toastify({
+            text: message,
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            stopOnFocus: true,
+            style: { background: type === 'success' ? "#28a745" : type === 'error' ? "#dc3545" : "#001B94" }
+        }).showToast();
     }
 
-    // --- DOM Elements ---
+    // --- DOM elements ---
     const pilotNameElem = document.getElementById('pilot-name');
     const pilotCallsignElem = document.getElementById('pilot-callsign');
     const profilePictureElem = document.getElementById('profile-picture');
@@ -16,8 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarNav = document.querySelector('.sidebar-nav');
     const dashboardContainer = document.querySelector('.dashboard-container');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
-    
-    // --- NEW: MODAL DOM ELEMENTS ---
+
+    // Promotion modal
     const promotionModal = document.getElementById('promotion-modal');
     const promoRankName = document.getElementById('promo-rank-name');
     const promoHoursRequired = document.getElementById('promo-hours-required');
@@ -25,40 +105,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalConfirmBtn = document.getElementById('modal-confirm-btn');
 
+    // Keep current pilot in memory so other views can read rank/operator
+    let CURRENT_PILOT = null;
 
-    // --- Sidebar Toggle Logic ---
+    // Sidebar toggle
     const sidebarState = localStorage.getItem('sidebarState');
     if (sidebarState === 'collapsed') {
         dashboardContainer.classList.add('sidebar-collapsed');
     }
     sidebarToggleBtn.addEventListener('click', () => {
         dashboardContainer.classList.toggle('sidebar-collapsed');
-        if (dashboardContainer.classList.contains('sidebar-collapsed')) {
-            localStorage.setItem('sidebarState', 'collapsed');
-        } else {
-            localStorage.setItem('sidebarState', 'expanded');
-        }
+        localStorage.setItem('sidebarState', dashboardContainer.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
     });
 
-    // --- Authentication Check ---
+    // Auth
     if (!token) {
         window.location.href = 'login.html';
         return;
     }
-    
-    // --- NEW: PROMOTION MODAL LOGIC ---
+
+    // Promotion modal helpers
     function showPromotionModal(details) {
         promoRankName.textContent = details.newRank;
         promoHoursRequired.textContent = `${details.flightHoursRequired} hrs`;
         promoPerksList.innerHTML = details.perks.map(perk => `<li>${perk}</li>`).join('');
         promotionModal.classList.add('visible');
     }
-    
-    function hidePromotionModal() {
-        promotionModal.classList.remove('visible');
-    }
+    function hidePromotionModal() { promotionModal.classList.remove('visible'); }
 
-    // --- Core Data Fetching ---
+    // Fetch pilot
     const fetchPilotData = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/me`, {
@@ -70,7 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Session invalid. Please log in again.');
             }
             const pilot = await response.json();
-            
+            CURRENT_PILOT = pilot;
+
             pilotNameElem.textContent = pilot.name || 'N/A';
             pilotCallsignElem.textContent = pilot.callsign || 'N/A';
             profilePictureElem.src = pilot.imageUrl || 'images/default-avatar.png';
@@ -82,9 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Helper function to create stats card ---
-    const createStatsCardHTML = (pilot) => {
-        return `
+    // Stats card
+    const createStatsCardHTML = (pilot) => `
         <div class="content-card">
             <h2><i class="fa-solid fa-chart-line"></i> Pilot Stats</h2>
             <div class="stats-grid">
@@ -98,34 +173,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         </div>
-        `;
-    };
+    `;
 
-    // --- MODIFICATION: Helper function to generate PIREP form HTML ---
-    const getPirepFormHTML = () => {
+    // Build PIREP form (rank-aware)
+    const getPirepFormHTML = (pilot) => {
+        const allowed = getAllowedFleet(pilot.rank);
+        const operatorOptions = [...new Set(allowed.map(a => a.operator || DEFAULT_OPERATOR))];
+
         return `
-            <div class="content-card">
-                <h2><i class="fa-solid fa-file-signature"></i> File Flight Report (PIREP)</h2>
-                <p>File a report for any completed flight. A verification image is required. If you are on duty, the flight will be automatically matched to your current roster.</p>
-                <form id="pirep-form">
-                    <div class="form-group"><label for="flight-number">Flight Number</label><input type="text" id="flight-number" required></div>
-                    <div class="form-group-row">
-                        <div class="form-group"><label for="departure-icao">Departure (ICAO)</label><input type="text" id="departure-icao" required maxlength="4"></div>
-                        <div class="form-group"><label for="arrival-icao">Arrival (ICAO)</label><input type="text" id="arrival-icao" required maxlength="4"></div>
-                    </div>
-                    <div class="form-group"><label for="aircraft-type">Aircraft Type</label><input type="text" id="aircraft-type" required></div>
-                    <div class="form-group"><label for="flight-time">Flight Time (hours)</label><input type="number" id="flight-time" step="0.1" min="0.1" required></div>
+        <div class="content-card">
+            <h2><i class="fa-solid fa-file-signature"></i> File Flight Report (PIREP)</h2>
+            <p>Your aircraft list is filtered to what <strong>${pilot.rank}</strong> is allowed to fly.</p>
+
+            <form id="pirep-form">
+                <div class="form-group">
+                    <label for="flight-number">Flight Number</label>
+                    <input type="text" id="flight-number" required>
+                </div>
+
+                <div class="form-group-row">
                     <div class="form-group">
-                        <label for="verification-image">Verification Image (e.g., flight summary screenshot)</label>
-                        <input type="file" id="verification-image" class="file-input" accept="image/*" required>
+                        <label for="departure-icao">Departure (ICAO)</label>
+                        <input type="text" id="departure-icao" required maxlength="4">
                     </div>
-                    <div class="form-group"><label for="remarks">Remarks (Optional)</label><textarea id="remarks" rows="3"></textarea></div>
-                    <button type="submit" class="cta-button">File Report</button>
-                </form>
-            </div>`;
+                    <div class="form-group">
+                        <label for="arrival-icao">Arrival (ICAO)</label>
+                        <input type="text" id="arrival-icao" required maxlength="4">
+                    </div>
+                </div>
+
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="aircraft-select">Aircraft</label>
+                        <select id="aircraft-select" class="select-control" required>
+                            ${allowed.map(a => `<option value="${a.code}">${a.name} (${a.code})</option>`).join('')}
+                        </select>
+                        <small class="muted">Only aircraft at or below your rank are shown.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="operator-select">Operator</label>
+                        <select id="operator-select" class="select-control">
+                            ${operatorOptions.map(op => `<option value="${op}">${op}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="flight-time">Flight Time (hours)</label>
+                    <input type="number" id="flight-time" step="0.1" min="0.1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="verification-image">Verification Image (e.g., flight summary screenshot)</label>
+                    <input type="file" id="verification-image" class="file-input" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="remarks">Remarks (Optional)</label>
+                    <textarea id="remarks" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="cta-button">File Report</button>
+            </form>
+        </div>`;
     };
 
-    // --- UI Rendering Logic ---
+    // Views
     const renderAllViews = async (pilot) => {
         if (pilot.dutyStatus === 'ON_DUTY') {
             await renderOnDutyViews(pilot);
@@ -139,29 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderOnRestViews = async (pilot) => {
         const dutyStatusView = document.getElementById('view-duty-status');
         const filePirepView = document.getElementById('view-file-pirep');
-        
+
         dutyStatusView.innerHTML = `
             <div class="content-card">
                 <h2><i class="fa-solid fa-plane-departure"></i> Duty Status: 🔴 On Rest</h2>
                 <p>You are currently on crew rest. To begin your next duty, please select an available flight roster from the Sector Ops page.</p>
             </div>
-            ${createStatsCardHTML(pilot)}`;
-
-        // MODIFICATION: Always show the PIREP form
-        filePirepView.innerHTML = getPirepFormHTML();
+            ${createStatsCardHTML(pilot)}
+        `;
+        filePirepView.innerHTML = getPirepFormHTML(pilot);
     };
 
     const renderOnDutyViews = async (pilot) => {
         const dutyStatusView = document.getElementById('view-duty-status');
         const filePirepView = document.getElementById('view-file-pirep');
-        
+
         try {
             const [rosterRes, pirepsRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/rosters`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`${API_BASE_URL}/api/me/pireps`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             if (!rosterRes.ok || !pirepsRes.ok) throw new Error('Could not load duty details.');
-            
+
             const [allRosters, allPireps] = await Promise.all([rosterRes.json(), pirepsRes.json()]);
             const currentRoster = allRosters.find(r => r._id === pilot.currentRoster);
             if (!currentRoster) throw new Error('Could not find your assigned roster.');
@@ -178,42 +290,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="roster-checklist">
                         ${currentRoster.legs.map(leg => {
                             const isCompleted = filedFlightNumbers.has(leg.flightNumber);
-                            return `<div class="roster-leg-item ${isCompleted ? 'completed' : ''}">
+                            const reqRank = leg.rankUnlock || deduceRankFromAircraftFE(leg.aircraft);
+                            const operator = leg.operator || currentRoster.operator || DEFAULT_OPERATOR;
+                            return `
+                              <div class="roster-leg-item ${isCompleted ? 'completed' : ''}">
                                 <span class="status-icon">${isCompleted ? '✅' : '➡️'}</span>
                                 <strong class="flight-number">${leg.flightNumber}</strong>
                                 <span class="route">${leg.departure} - ${leg.arrival}</span>
-                            </div>`;
+                                <span class="leg-badges">
+                                    <span class="badge badge-operator" title="Operator">${operator}</span>
+                                    <span class="badge badge-rank" title="Required Rank">Req: ${reqRank}</span>
+                                </span>
+                              </div>`;
                         }).join('')}
                     </div>
-                </div>`;
-            
-            // MODIFICATION: Always show the PIREP form
-            filePirepView.innerHTML = getPirepFormHTML();
+                </div>
+            `;
+            filePirepView.innerHTML = getPirepFormHTML(pilot);
 
         } catch (error) {
             dutyStatusView.innerHTML = `<div class="content-card"><p class="error-text">${error.message}</p></div>`;
         }
     };
-    
+
     const fetchAndDisplayRosters = async () => {
         const container = document.getElementById('roster-list-container');
         const header = document.getElementById('roster-list-header');
         try {
             const response = await fetch(`${API_BASE_URL}/api/rosters/my-rosters`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Could not fetch personalized rosters.');
-            
-            const data = await response.json();
-            const rosters = data.rosters;
-            const criteria = data.searchCriteria;
 
-            if (criteria.searched.length > 0) {
-                header.innerHTML = `Showing rosters based on your location at: <strong>${criteria.searched.join(' & ')}</strong>`;
-                 // --- MAP INTEGRATION (ADDED) ---
+            const data = await response.json();
+            const rosters = data.rosters || [];
+            const criteria = data.searchCriteria || {};
+
+            if (criteria.searched?.length > 0) {
+                header.innerHTML = `
+                    <div>
+                        Showing rosters for <strong>${criteria.searched.join(' & ')}</strong>
+                        <span class="badge badge-rank ml-8">Your rank: ${CURRENT_PILOT?.rank || 'Unknown'}</span>
+                    </div>`;
                 if (window.plotRosters) {
                     window.plotRosters(criteria.searched[0], rosters);
                 }
             } else {
-                 header.innerHTML = 'No location data found. Showing rosters from primary hubs.';
+                header.innerHTML = 'No location data found. Showing rosters from primary hubs.';
             }
 
             if (rosters.length === 0) {
@@ -221,32 +342,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            container.innerHTML = rosters.map(roster => `
+            container.innerHTML = rosters.map(roster => {
+                const operator = roster.operator || DEFAULT_OPERATOR;
+                return `
                 <div class="roster-item">
                     <div class="roster-info">
                         <strong>${roster.name}</strong>
-                        <small>Hub: ${roster.hub} | Total Time: ${roster.totalFlightTime.toFixed(1)} hrs</small>
+                        <small>
+                            Hub: ${roster.hub} |
+                            Operator: <span class="badge badge-operator">${operator}</span> |
+                            Allowed up to: <span class="badge badge-rank">${CURRENT_PILOT?.rank || 'Unknown'}</span> |
+                            Total Time: ${Number(roster.totalFlightTime || 0).toFixed(1)} hrs
+                        </small>
                         <div class="roster-path">${roster.legs.map(l => l.departure).join(' → ')} → ${roster.legs.slice(-1)[0].arrival}</div>
                     </div>
-                    
+
                     <div class="roster-actions">
-                        <button class="details-button" data-roster-id="${roster._id}">Details</button>
+                        <button class="details-button" data-roster-id="${roster._id}" aria-expanded="false">Details</button>
                         <button class="cta-button go-on-duty-btn" data-roster-id="${roster._id}">Go On Duty</button>
                     </div>
-    
+
                     <div class="roster-leg-details" id="details-${roster._id}">
                         <ul>
-                            ${roster.legs.map(leg => `
-                                <li>
-                                    <span class="leg-flight-number">${leg.flightNumber} (${leg.departure} → ${leg.arrival})</span>
-                                    <span class="leg-aircraft">${leg.aircraft}</span>
-                                    <span class="leg-time">${leg.flightTime.toFixed(1)} hrs</span>
-                                </li>
-                            `).join('')}
+                            ${roster.legs.map(leg => {
+                                const reqRank = leg.rankUnlock || deduceRankFromAircraftFE(leg.aircraft);
+                                const legOperator = leg.operator || operator;
+                                return `
+                                  <li>
+                                    <div class="leg-main">
+                                        <span class="leg-flight-number">${leg.flightNumber} (${leg.departure} → ${leg.arrival})</span>
+                                        <span class="leg-meta">
+                                            <span class="leg-aircraft">${leg.aircraft}</span>
+                                            <span class="leg-time">${Number(leg.flightTime || 0).toFixed(1)} hrs</span>
+                                        </span>
+                                    </div>
+                                    <div class="leg-badges">
+                                        <span class="badge badge-operator" title="Operator">${legOperator}</span>
+                                        <span class="badge badge-rank" title="Required Rank">Req: ${reqRank}</span>
+                                    </div>
+                                  </li>`;
+                            }).join('')}
                         </ul>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } catch (error) {
             container.innerHTML = `<p class="error-text">${error.message}</p>`;
             header.innerHTML = 'Could not load roster data.';
@@ -264,25 +403,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '<p>You have not filed any flight reports yet.</p>';
                 return;
             }
-            container.innerHTML = pireps.map(p => `
+            container.innerHTML = pireps.map(p => {
+                const created = new Date(p.createdAt).toLocaleDateString();
+                const operator = p.operator || DEFAULT_OPERATOR;
+                const reqRank = deduceRankFromAircraftFE(p.aircraft);
+                return `
                 <div class="pirep-history-item status-${p.status.toLowerCase()}">
                     <div class="pirep-info">
                         <strong>${p.flightNumber}</strong> (${p.departure} - ${p.arrival})
-                        <small>${new Date(p.createdAt).toLocaleDateString()}</small>
+                        <small>${created}</small>
+                        <div class="pirep-chips">
+                            <span class="badge badge-operator">${operator}</span>
+                            <span class="badge badge-rank">Req: ${reqRank}</span>
+                        </div>
                     </div>
                     <div class="pirep-details">
                         <span>${p.aircraft}</span>
-                        <span>${p.flightTime.toFixed(1)} hrs</span>
+                        <span>${Number(p.flightTime || 0).toFixed(1)} hrs</span>
                         <span class="status-badge status-${p.status.toLowerCase()}">${p.status}</span>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } catch (error) {
             container.innerHTML = `<p class="error-text">${error.message}</p>`;
         }
     };
-    
-    // --- Event Listeners ---
+
+    // --- Nav & actions ---
     sidebarNav.addEventListener('click', (e) => {
         const link = e.target.closest('.nav-link');
         if (!link) return;
@@ -294,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(viewId).classList.add('active');
     });
 
-    // --- MODIFICATION: Updated PIREP submission to handle FormData for image upload ---
+    // PIREP submit (FormData for image)
     mainContentContainer.addEventListener('submit', async (e) => {
         if (e.target.id === 'pirep-form') {
             e.preventDefault();
@@ -306,10 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('flightNumber', document.getElementById('flight-number').value.toUpperCase());
             formData.append('departure', document.getElementById('departure-icao').value.toUpperCase());
             formData.append('arrival', document.getElementById('arrival-icao').value.toUpperCase());
-            formData.append('aircraft', document.getElementById('aircraft-type').value);
+            formData.append('aircraft', document.getElementById('aircraft-select').value);
+            formData.append('operator', document.getElementById('operator-select').value);
             formData.append('flightTime', document.getElementById('flight-time').value);
             formData.append('remarks', document.getElementById('remarks').value);
-            
+
             const imageInput = document.getElementById('verification-image');
             if (imageInput.files.length > 0) {
                 formData.append('verificationImage', imageInput.files[0]);
@@ -323,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/pireps`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }, // NO Content-Type header
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
                 const result = await response.json();
@@ -343,19 +491,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const rosterId = e.target.dataset.rosterId;
             const detailsPanel = document.getElementById(`details-${rosterId}`);
             if (detailsPanel) {
-                detailsPanel.classList.toggle('visible');
-                const isVisible = detailsPanel.classList.contains('visible');
-                e.target.textContent = isVisible ? 'Hide' : 'Details';
-                
-                // --- MAP INTEGRATION (ADDED) ---
-                if (isVisible) {
-                    window.highlightRoster(rosterId);
-                } else {
-                    window.resetHighlights();
-                }
+                const nowVisible = !detailsPanel.classList.contains('visible');
+                detailsPanel.classList.toggle('visible', nowVisible);
+                e.target.setAttribute('aria-expanded', String(nowVisible));
+                e.target.textContent = nowVisible ? 'Hide' : 'Details';
+
+                if (nowVisible) { window.highlightRoster?.(rosterId); }
+                else { window.resetHighlights?.(); }
             }
         }
-    
+
         if (e.target.classList.contains('go-on-duty-btn')) {
             const rosterId = e.target.dataset.rosterId;
             e.target.disabled = true;
@@ -378,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+
         if (e.target.id === 'end-duty-btn') {
             e.target.disabled = true;
             e.target.textContent = 'Completing...';
@@ -388,13 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to end duty.');
-                
-                if (result.promotionDetails) {
-                    showPromotionModal(result.promotionDetails);
-                } else {
-                    showNotification(result.message, 'success');
-                }
-                
+
+                if (result.promotionDetails) { showPromotionModal(result.promotionDetails); }
+                else { showNotification(result.message, 'success'); }
+
                 await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
@@ -403,22 +546,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    
-    // --- NEW: MODAL CLOSE EVENT LISTENERS ---
+
+    // Modal close
     modalCloseBtn.addEventListener('click', hidePromotionModal);
     modalConfirmBtn.addEventListener('click', hidePromotionModal);
-    promotionModal.addEventListener('click', (e) => {
-        if (e.target === promotionModal) {
-            hidePromotionModal();
-        }
-    });
+    promotionModal.addEventListener('click', (e) => { if (e.target === promotionModal) hidePromotionModal(); });
 
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        showNotification('You have been logged out.', 'info');
-        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
-    });
-
-    // --- Initial Load ---
+    // Initial load
     fetchPilotData();
 });
+</script>
