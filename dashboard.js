@@ -1,3 +1,5 @@
+// dashboard.js
+
 document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = 'https://indgo-backend.onrender.com';
 
@@ -248,6 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'pirep-review-card';
         card.id = `pirep-${p._id}`;
+
+        const verificationLinkHtml = p.verificationImageUrl
+            ? `<p><strong>Verification:</strong> <a href="${p.verificationImageUrl}" target="_blank" class="view-image-btn">View Submitted Image</a></p>`
+            : '<p><strong>Verification:</strong> No image submitted.</p>';
+
         card.innerHTML = `
             <div class="card-header">
                 <h4>${p.flightNumber} (${p.departure} → ${p.arrival})</h4>
@@ -259,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Aircraft:</strong> ${p.aircraft}</p>
                 <p><strong>Flight Time:</strong> ${p.flightTime.toFixed(1)} hours</p>
                 <p><strong>Remarks:</strong> ${p.remarks || 'None'}</p>
+                ${verificationLinkHtml}
                 <p><small>Filed on: ${new Date(p.createdAt).toLocaleString()}</small></p>
             </div>
             <div class="card-actions">
