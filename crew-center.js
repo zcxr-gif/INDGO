@@ -101,6 +101,30 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
+    // --- MODIFICATION: Helper function to generate PIREP form HTML ---
+    const getPirepFormHTML = () => {
+        return `
+            <div class="content-card">
+                <h2><i class="fa-solid fa-file-signature"></i> File Flight Report (PIREP)</h2>
+                <p>File a report for any completed flight. A verification image is required. If you are on duty, the flight will be automatically matched to your current roster.</p>
+                <form id="pirep-form">
+                    <div class="form-group"><label for="flight-number">Flight Number</label><input type="text" id="flight-number" required></div>
+                    <div class="form-group-row">
+                        <div class="form-group"><label for="departure-icao">Departure (ICAO)</label><input type="text" id="departure-icao" required maxlength="4"></div>
+                        <div class="form-group"><label for="arrival-icao">Arrival (ICAO)</label><input type="text" id="arrival-icao" required maxlength="4"></div>
+                    </div>
+                    <div class="form-group"><label for="aircraft-type">Aircraft Type</label><input type="text" id="aircraft-type" required></div>
+                    <div class="form-group"><label for="flight-time">Flight Time (hours)</label><input type="number" id="flight-time" step="0.1" min="0.1" required></div>
+                    <div class="form-group">
+                        <label for="verification-image">Verification Image (e.g., flight summary screenshot)</label>
+                        <input type="file" id="verification-image" class="file-input" accept="image/*" required>
+                    </div>
+                    <div class="form-group"><label for="remarks">Remarks (Optional)</label><textarea id="remarks" rows="3"></textarea></div>
+                    <button type="submit" class="cta-button">File Report</button>
+                </form>
+            </div>`;
+    };
+
     // --- UI Rendering Logic ---
     const renderAllViews = async (pilot) => {
         if (pilot.dutyStatus === 'ON_DUTY') {
@@ -108,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             await renderOnRestViews(pilot);
         }
-        await fetchAndDisplayRosters(); // UPDATED to use the new personalized endpoint
+        await fetchAndDisplayRosters();
         await fetchPirepHistory();
     };
 
@@ -123,11 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             ${createStatsCardHTML(pilot)}`;
 
-        filePirepView.innerHTML = `
-            <div class="content-card">
-                 <h2><i class="fa-solid fa-file-signature"></i> File PIREP</h2>
-                 <p>You must be on duty and have completed a flight from your assigned roster to file a PIREP.</p>
-            </div>`;
+        // MODIFICATION: Always show the PIREP form
+        filePirepView.innerHTML = getPirepFormHTML();
     };
 
     const renderOnDutyViews = async (pilot) => {
@@ -136,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const [rosterRes, pirepsRes] = await Promise.all([
-                // Fetching all rosters to find the current one is still okay here.
                 fetch(`${API_BASE_URL}/api/rosters`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`${API_BASE_URL}/api/me/pireps`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
@@ -167,41 +187,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
             
-            filePirepView.innerHTML = `
-                <div class="content-card">
-                    <h2><i class="fa-solid fa-file-signature"></i> File Next Flight Report (PIREP)</h2>
-                    <form id="pirep-form">
-                        <div class="form-group"><label for="flight-number">Flight Number</label><input type="text" id="flight-number" required></div>
-                        <div class="form-group-row">
-                            <div class="form-group"><label for="departure-icao">Departure (ICAO)</label><input type="text" id="departure-icao" required maxlength="4"></div>
-                            <div class="form-group"><label for="arrival-icao">Arrival (ICAO)</label><input type="text" id="arrival-icao" required maxlength="4"></div>
-                        </div>
-                        <div class="form-group"><label for="aircraft-type">Aircraft Type</label><input type="text" id="aircraft-type" required></div>
-                        <div class="form-group"><label for="flight-time">Flight Time (hours)</label><input type="number" id="flight-time" step="0.1" min="0.1" required></div>
-                        <div class="form-group"><label for="remarks">Remarks (Optional)</label><textarea id="remarks" rows="3"></textarea></div>
-                        <button type="submit" class="cta-button">File Report</button>
-                    </form>
-                </div>`;
+            // MODIFICATION: Always show the PIREP form
+            filePirepView.innerHTML = getPirepFormHTML();
 
         } catch (error) {
             dutyStatusView.innerHTML = `<div class="content-card"><p class="error-text">${error.message}</p></div>`;
         }
     };
     
-    // --- *** UPDATED DATA FETCHER FOR ROSTERS *** ---
     const fetchAndDisplayRosters = async () => {
         const container = document.getElementById('roster-list-container');
         const header = document.getElementById('roster-list-header');
         try {
-            // **CHANGE**: Call the new personalized endpoint
             const response = await fetch(`${API_BASE_URL}/api/rosters/my-rosters`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Could not fetch personalized rosters.');
             
             const data = await response.json();
-            const rosters = data.rosters; // The rosters are now in a nested object
+            const rosters = data.rosters;
             const criteria = data.searchCriteria;
 
-            // **NEW**: Dynamically update the header text
             if (criteria.searched.length > 0) {
                 header.innerHTML = `Showing rosters based on your location at: <strong>${criteria.searched.join(' & ')}</strong>`;
             } else {
@@ -213,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // The rest of the rendering logic remains the same
             container.innerHTML = rosters.map(roster => `
                 <div class="roster-item">
                     <div class="roster-info">
@@ -287,25 +290,37 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(viewId).classList.add('active');
     });
 
+    // --- MODIFICATION: Updated PIREP submission to handle FormData for image upload ---
     mainContentContainer.addEventListener('submit', async (e) => {
         if (e.target.id === 'pirep-form') {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             btn.disabled = true;
             btn.textContent = 'Filing...';
-            const flightData = {
-                flightNumber: document.getElementById('flight-number').value.toUpperCase(),
-                departure: document.getElementById('departure-icao').value.toUpperCase(),
-                arrival: document.getElementById('arrival-icao').value.toUpperCase(),
-                aircraft: document.getElementById('aircraft-type').value,
-                flightTime: document.getElementById('flight-time').value,
-                remarks: document.getElementById('remarks').value,
-            };
+
+            const formData = new FormData();
+            formData.append('flightNumber', document.getElementById('flight-number').value.toUpperCase());
+            formData.append('departure', document.getElementById('departure-icao').value.toUpperCase());
+            formData.append('arrival', document.getElementById('arrival-icao').value.toUpperCase());
+            formData.append('aircraft', document.getElementById('aircraft-type').value);
+            formData.append('flightTime', document.getElementById('flight-time').value);
+            formData.append('remarks', document.getElementById('remarks').value);
+            
+            const imageInput = document.getElementById('verification-image');
+            if (imageInput.files.length > 0) {
+                formData.append('verificationImage', imageInput.files[0]);
+            } else {
+                showNotification('Error: You must upload a verification image.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'File Report';
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE_URL}/api/pireps`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(flightData)
+                    headers: { 'Authorization': `Bearer ${token}` }, // NO Content-Type header
+                    body: formData
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to file report.');
@@ -362,15 +377,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to end duty.');
                 
-                // --- MODIFIED: CHECK FOR PROMOTION ---
-                // We check the result from the API call. The backend now sends a 'promotionDetails' object if a promotion occurred.
                 if (result.promotionDetails) {
                     showPromotionModal(result.promotionDetails);
                 } else {
                     showNotification(result.message, 'success');
                 }
-                // --- END MODIFICATION ---
-
+                
                 await fetchPilotData();
             } catch (error) {
                 showNotification(`Error: ${error.message}`, 'error');
@@ -384,7 +396,6 @@ document.addEventListener('DOMContentLoaded', () => {
     modalCloseBtn.addEventListener('click', hidePromotionModal);
     modalConfirmBtn.addEventListener('click', hidePromotionModal);
     promotionModal.addEventListener('click', (e) => {
-        // Close the modal if the user clicks on the overlay itself, not the content
         if (e.target === promotionModal) {
             hidePromotionModal();
         }

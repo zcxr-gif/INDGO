@@ -234,6 +234,29 @@ input, textarea { width: 100%; padding: 0.8rem; border-radius: 5px; border: 1px 
 .end-duty-btn:hover { background: #9b2c2c; }
 .cta-button:disabled, .end-duty-btn:disabled { background: #555; cursor: not-allowed; }
 
+/* --- NEW STYLES FOR FILE INPUT --- */
+.file-input {
+    padding: 0.6rem;
+    background-color: var(--secondary-bg); /* A slightly different background */
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--dashboard-text-muted);
+    cursor: pointer;
+}
+.file-input::file-selector-button {
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: background-color 0.3s;
+}
+.file-input::file-selector-button:hover {
+    background-color: #0025c4;
+}
+
 /* --- Additions for Roster Details --- */
 
 /* Container to hold the action buttons */
