@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        loadAndRenderRosters();
+        loadAndRenderRosters(true);
 
         document.getElementById('add-leg-btn').addEventListener('click', () => {
             const legContainer = document.getElementById('roster-legs-container');
@@ -462,20 +462,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    aasync function loadAndRenderRosters(fetchAll = false) { // Add the fetchAll parameter
-    const container = document.getElementById('manage-rosters-container');
-    try {
-        // Build the URL based on the fetchAll flag
-        const url = fetchAll 
-            ? `${API_BASE_URL}/api/rosters?all=true` 
-            : `${API_BASE_URL}/api/rosters`;
-
-        const rosters = await safeFetch(url);
-        renderList(container, rosters, createRosterCardElement, 'No rosters have been created yet.');
-    } catch (error) {
-        if (container) container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
+    async function loadAndRenderRosters(fetchAll = false) {
+        const container = document.getElementById('manage-rosters-container');
+        try {
+            const url = fetchAll 
+                ? `${API_BASE_URL}/api/rosters?all=true`
+                : `${API_BASE_URL}/api/rosters`;
+            const rosters = await safeFetch(url);
+            renderList(container, rosters, createRosterCardElement, 'No rosters have been created yet.');
+        } catch (error) {
+            if (container) container.innerHTML = `<p style="color:red;">Could not load rosters: ${error.message}</p>`;
+        }
     }
-}
 
     function createRosterCardElement(roster) {
         const card = document.createElement('div');
