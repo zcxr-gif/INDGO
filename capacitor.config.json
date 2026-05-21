@@ -1,0 +1,8 @@
+{
+  "appId": "com.indgoairvirtual.app",
+  "appName": "IndGo AIR Virtual",
+  "webDir": "www",
+  "server": {
+    "iosScheme": "https"
+  }
+}

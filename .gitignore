@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+
+# Generated Capacitor web bundle (rebuild with: npm run build:www)
+www/
+
+# macOS / Xcode
+.DS_Store
+DerivedData/
+xcuserdata/
