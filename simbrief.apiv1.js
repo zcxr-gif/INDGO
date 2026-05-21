@@ -20,7 +20,7 @@
 * same directory as your Dispatch Options page.
 */
 
-var api_dir = '/.netlify/functions/'; //Ex. "some/directory/";
+var api_dir = 'https://indgo-va.netlify.app/.netlify/functions/'; //Ex. "some/directory/";
 
 
 

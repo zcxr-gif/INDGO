@@ -1,6 +1,16 @@
 {
+  "scripts": {
+    "build:www": "bash scripts/build-www.sh",
+    "ios:sync": "npm run build:www && npx cap sync ios",
+    "ios:open": "npx cap open ios"
+  },
   "dependencies": {
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
     "node-fetch": "^2.7.0",
     "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.4"
   }
 }

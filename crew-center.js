@@ -8452,7 +8452,7 @@ async function updateSectorOpsSecondaryData() {
         if (ofpId) {
             showNotification('Fetching flight plan from SimBrief...', 'info');
             try {
-                const response = await fetch(`/.netlify/functions/simbrief?fetch_ofp=true&ofp_id=${ofpId}`);
+                const response = await fetch(`https://indgo-va.netlify.app/.netlify/functions/simbrief?fetch_ofp=true&ofp_id=${ofpId}`);
                 if (!response.ok) throw new Error('Could not retrieve flight plan from SimBrief.');
                 const data = await response.json();
 
